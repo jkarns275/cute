@@ -4,6 +4,14 @@ class ProgramArguments(argparse.ArgumentParser):
 
     def __init__(self):
         super().__init__(description='EXAMM for TensorFlow', add_help=True)
+
+        self.dataset: str = None
+        self.output_directory: str = None
+        self.number_islands: int = None
+        self.population_size: int = None
+        self.max_genomes: int = None
+        self.backprop_iterations: int = None
+
         self.add_argument('dataset', metavar='dataset', type=str, nargs=1,
                             help='the image dataset to be used, select one from the available datasets here: https://www.tensorflow.org/datasets/catalog/overview')
         self.add_argument('output_directory', metavar='output_directory', type=str, nargs=1,

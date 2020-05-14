@@ -7,7 +7,8 @@ from speciation_strategy import Island
 
 class IslandSpeciationStrategy(SpeciationStrategy):
 
-    def __init__(self, initial_genome: CnnGenome, number_islands: int, population_size: int):
+    def __init__(self, initial_genome: CnnGenome, number_islands: int, population_size: int,
+                mutation_rate: float, inter_island_crossover_rate: float, intra_island_crossover_rate: float):
         super().__init__()
 
         self.population_size = population_size
@@ -16,6 +17,14 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         self.islands: List[Island] = list(map(lambda _: Island(population_size), range(number_islands)))
         self.global_best_genome = initial_genome
         self.global_worst_genome = initial_genome
+
+        self.mutation_rate: float = mutation_rate
+        self.inter_island_crossover_rate: float = inter_island_crossover_rate
+        self.intra_island_crossover_rate: float = intra_island_crossover_rate
+
+        # Make sure these rates sum to 1.0
+        assert 0.9999 < mutation_rate + inter_island_crossover_rate + intra_island_crossover_rate < 1.00001
+        
 
     def try_insert_genome(self, genome: CnnGenome):
         """

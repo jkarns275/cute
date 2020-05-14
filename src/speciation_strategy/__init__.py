@@ -29,8 +29,8 @@ class SpeciationStrategy:
         raise Exception("Called abstract get_inserted_genomes")
 
 
-    def get_global_best_genome(self):
-        raise Exception("Called abstract get_global_best_genome")
+    def get_best_genome(self):
+        raise Exception("Called abstract get_best_genome")
 
 
     def generate_genome(self, examm: EXAMM):
