@@ -1,9 +1,11 @@
 import time
+import logging
 
 import numpy as np
 
 from program_arguments import ProgramArguments
-from speciation_strategy import SpeciationStrategy, IslandSpeciationStrategy
+from speciation_strategy import SpeciationStrategy
+from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
 from cnn import CnnGenome
 
 
@@ -30,12 +32,14 @@ class EXAMM:
     split_edge_rate: float          = 1.0
     ## How often the clone mutation should be performed
     clone_rate: float               = 1.0
-    
+   
+
     def __init__(self, program_arguments: ProgramArguments):
-        self.population_size: int = program_arguments.population_size
-        self.number_islands: int = program_arguments.number_islands
-        self.bp_iterations: int = program_arguments.backprop_iterations
-        self.output_directory: str = program_arguments.output_directory
+        self.population_size: int = program_arguments.args.population_size
+        self.number_islands: int = program_arguments.args.number_islands
+        self.bp_iterations: int = program_arguments.args.backprop_iterations
+        self.max_genomes: int = program_arguments.args.max_genomes
+        self.output_directory: str = program_arguments.args.output_directory
 
         initial_genome: CnnGenome = self.generate_initial_genome()
 
@@ -43,21 +47,24 @@ class EXAMM:
         self.intra_island_co_rate: float = 0.2
         self.inter_island_co_rate: float = 0.1
 
-        self.speciation_strategy: SpeciationStrategy = 
+        self.speciation_strategy: SpeciationStrategy = \
             IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size,
-                                    mutation_rate, intra_island_co_rate, inter_island_co_rate)
+                                    self.mutation_rate, self.intra_island_co_rate, self.inter_island_co_rate)
 
         # Each island gets the initial genome
         self.generated_genomes: int = self.number_islands
         self.inserted_genomes: int = self.number_islands
         
-        self.rng: np.random.PCG64 = np.random.PCG64(time.time())
+        self.rng: np.random.PCG64 = np.random.PCG64(int(str(time.time()).split('.')[1]))
+
 
     def generate_initial_genome(self):
         self.unimplemented("generate_initial_genome")
 
+
     def unimplemented(self, m: str):
-        raise Exception(f"method 'EXAMM::{m}' has not been implemented")
+        logging.info(f"called unimplemented method 'EXAMM::{m}'")
+        # raise Exception(f"method 'EXAMM::{m}' has not been implemented")
 
     
     def update_logs(self):
@@ -65,28 +72,41 @@ class EXAMM:
 
 
     def generate_genome(self):
-        genome = speciation_strategy.generate_genome(self)
+        if self.generated_genomes >= self.max_genomes:
+            return None
+
+        genome = self.speciation_strategy.generate_genome(self)
         
         self.generated_genomes += 1
+        self.unimplemented('generate_genome')
 
+        return CnnGenome()
     
+
     def try_insert_genome(self, genome: CnnGenome):
-        self.speciation_strategy.try_insert_genome(genome)
+        if self.speciation_strategy.try_insert_genome(genome):
+            self.inserted_genomes += 1
+
 
     def mutate(self, n_mutations: int, genome: CnnGenome):
         self.unimplemented('mutate')
 
+
     def crossover(self, better_parent: CnnGenome, worse_parent: CnnGenome):
         self.unimplemented('crossover')
+
 
     def get_worst_genome(self):
         return self.speciation_strategy.get_worst_genome()
 
+
     def get_best_genome(self):
         return self.speciation_strategy.get_best_genome()
 
+
     def get_best_fitness(self):
         return self.speciation_strategy.get_best_fitness()
+
 
     def get_worst_fitness(self):
         return self.speciation_strategy.get_worst_fitness()

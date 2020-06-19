@@ -1,9 +1,9 @@
+import logging
 from typing import List
 
-from examm import EXAMM
 from speciation_strategy import SpeciationStrategy
 from cnn import CnnGenome
-from speciation_strategy import Island
+from speciation_strategy.island import Island
 
 class IslandSpeciationStrategy(SpeciationStrategy):
 
@@ -31,12 +31,14 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return True, otherwise it will return False.
         """
-        
+        logging.info("called disabled method IslandSpeciationStrategy")
+        return True
+
         if self.global_best_genome.mse > genome.mse:
             self.global_best_genome = genome
         
         removed_genome, insert_position  = self.islands[genome.island].try_insert_genome(genome)
-        inserted = removed_genome != None && insert_position >= 0
+        inserted = removed_genome != None and insert_position >= 0
 
         if not inserted:
             return False
@@ -47,28 +49,33 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
 
     def get_best_fitness(self):
-        raise Exception("Called abstract get_best_fitness")
+        logging.info("called abstract get_best_fitness")        
+        # raise Exception("Called abstract get_best_fitness")
 
 
     def get_worst_fitness(self):
-        raise Exception("Called abstact get_worst_fitness")
+        logging.info("called abstract get_worst_fitness")
+        # raise Exception("Called abstact get_worst_fitness")
 
 
     def get_generated_genomes(self):
-        raise Exception("Called abstract get_generated_genomes")
+        return self.generated_genomes
 
 
     def get_inserted_genomes(self):
-        raise Exception("Called abstract get_inserted_genomes")
+        return self.inserted_genomes
 
 
     def get_global_best_genome(self):
-        raise Exception("Called abstract get_global_best_genome")
+        logging.info("called abstract get_global_best_genome")
+        # raise Exception("Called abstract get_global_best_genome")
 
 
     def get_global_worst_genome(self):
-        raise Exception("Called abstract get_global_worst_genome")
+        logging.info("called abstract get_global_worst_genome")
+        # raise Exception("Called abstract get_global_worst_genome")
 
-    def generate_genome(self, examm: EXAMM):
-        raise Exception("Called abstract generate_genome")
+    def generate_genome(self, examm: 'EXAMM'):
+        logging.info("called abstract generate_genome")
+        # raise Exception("Called abstract generate_genome")
 

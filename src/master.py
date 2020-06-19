@@ -23,14 +23,13 @@ class Master:
             tags.GENOME_TAG:        self.handle_genome,
         }
 
-        while True:
+        while not self.done():
             status = MPI.Status()
-            self.comm.Probe(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=s)
+            self.comm.Probe(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
     
             source = status.Get_source()
             tag = status.Get_tag()
             logging.debug(f"probe returned message from {source} with tag {tag}")
-
 
             if tag in handlers:
                 handler = handlers[tag]
@@ -40,7 +39,12 @@ class Master:
                 self.comm.Abort(1)
 
 
+    def done(self):
+        return self.terminates_sent >= self.max_rank - 1
+
+
     def handle_work_request(self, source: int):
+        logging.info(f"handling work request from {source}")
         work_request_message = requests.recieve_work_request(self.comm, source)
         
         genome: CnnGenome = self.examm.generate_genome()
@@ -56,5 +60,6 @@ class Master:
 
 
     def handle_genome(self, source: int):
+        logging.info(f"handling genome from {source}")
         genome: CnnGenome = requests.recieve_genome(self.comm, source)
-        self.examm.insert_genome(genome)
+        self.examm.try_insert_genome(genome)

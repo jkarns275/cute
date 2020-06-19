@@ -20,14 +20,14 @@ def recieve_genome(comm: MPI.Intercomm, source: int):
 
 
 def send_genome(comm: MPI.Intercomm, dest: int, genome: CnnGenome):
-    comm.send(genome, dest=dest, tags=tags.GENOME_TAG)
+    comm.send(genome, dest=dest, tag=tags.GENOME_TAG)
 
 
 def recieve_terminate(comm: MPI.Intercomm, source: int):
-    data = comm.recv(source=source, tags=tags.TERMINATE_TAG)
+    data = comm.recv(source=source, tag=tags.TERMINATE_TAG)
     return data
 
 
 def send_terminate(comm: MPI.Intercomm, dest: int):
     data = { 'message': 0 }
-    comm.send(dest=dest, tags=tags.TERMINATE_TAG)
+    comm.send(data, dest=dest, tag=tags.TERMINATE_TAG)

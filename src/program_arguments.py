@@ -20,9 +20,9 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=1, type=int, help='the number of separate islands to use')
         self.add_argument('-ps', '--population_size', metavar='population_size', action='store',
                 default=10, type=int, help='the maximum number of genomes on each islands')
-        self.add_arguments('-mg', '--max_genomes', metavar='max_genomes', action='store',
+        self.add_argument('-mg', '--max_genomes', metavar='max_genomes', action='store',
                 default=1000, type=int, help='the number of genomes to generate and evaluate')
-        self.add_arguments('-bpi', '--backprop_iterations', metavar='backprop_iterations', action='store',
+        self.add_argument('-bpi', '--backprop_iterations', metavar='backprop_iterations', action='store',
                 default=1, type=int, help='the number of iterations of backpropagation to be applied to generated genomes to evaluate them')
 
-        self.parse_args()
+        self.args = self.parse_args()

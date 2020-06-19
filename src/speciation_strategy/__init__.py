@@ -1,9 +1,9 @@
-from examm import EXAMM
-
 class SpeciationStrategy:
 
     def __init__(self):
-        pass
+        self.generated_genomes: int = 0
+        self.inserted_genomes: int = 0
+
 
     def try_insert_genome(self, genome):
         """
@@ -33,5 +33,5 @@ class SpeciationStrategy:
         raise Exception("Called abstract get_best_genome")
 
 
-    def generate_genome(self, examm: EXAMM):
+    def generate_genome(self, examm: 'EXAMM'):
         raise Exception("Called abstract generate_genome")
