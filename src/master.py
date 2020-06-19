@@ -22,6 +22,8 @@ class Master:
             tags.WORK_REQUEST_TAG:  self.handle_work_request,
             tags.GENOME_TAG:        self.handle_genome,
         }
+        
+        logging.info("starting master loop")
 
         while not self.done():
             status = MPI.Status()
@@ -37,20 +39,21 @@ class Master:
             else:
                 logging.fatal(f"recieved unrecognized tag {tag} from {source}")
                 self.comm.Abort(1)
-
+        
+        logging.info("ending master")
 
     def done(self):
         return self.terminates_sent >= self.max_rank - 1
 
 
     def handle_work_request(self, source: int):
-        logging.info(f"handling work request from {source}")
+        logging.debug(f"handling work request from {source}")
         work_request_message = requests.recieve_work_request(self.comm, source)
         
         genome: CnnGenome = self.examm.generate_genome()
 
         if genome is None:
-            logging.info(f"terminating worker {source}")
+            logging.debug(f"terminating worker {source}")
 
             requests.send_terminate(self.comm, source)            
             self.terminates_sent += 1
@@ -60,6 +63,6 @@ class Master:
 
 
     def handle_genome(self, source: int):
-        logging.info(f"handling genome from {source}")
+        logging.debug(f"handling genome from {source}")
         genome: CnnGenome = requests.recieve_genome(self.comm, source)
         self.examm.try_insert_genome(genome)

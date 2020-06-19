@@ -31,7 +31,7 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return True, otherwise it will return False.
         """
-        logging.info("called disabled method IslandSpeciationStrategy")
+        logging.debug("called disabled method IslandSpeciationStrategy")
         return True
 
         if self.global_best_genome.mse > genome.mse:
@@ -44,17 +44,19 @@ class IslandSpeciationStrategy(SpeciationStrategy):
             return False
         elif removed_genome == self.global_worst_genome and insert_position == self.global_worst_genome:
             self.global_worst_genome = genome
+        
+            self.inserted_genomes += 1
 
-        return inserted
+            return True
 
 
     def get_best_fitness(self):
-        logging.info("called abstract get_best_fitness")        
+        logging.debug("called abstract get_best_fitness")        
         # raise Exception("Called abstract get_best_fitness")
 
 
     def get_worst_fitness(self):
-        logging.info("called abstract get_worst_fitness")
+        logging.debug("called abstract get_worst_fitness")
         # raise Exception("Called abstact get_worst_fitness")
 
 
@@ -67,15 +69,15 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
 
     def get_global_best_genome(self):
-        logging.info("called abstract get_global_best_genome")
+        logging.debug("called abstract get_global_best_genome")
         # raise Exception("Called abstract get_global_best_genome")
 
 
     def get_global_worst_genome(self):
-        logging.info("called abstract get_global_worst_genome")
+        logging.debug("called abstract get_global_worst_genome")
         # raise Exception("Called abstract get_global_worst_genome")
 
     def generate_genome(self, examm: 'EXAMM'):
-        logging.info("called abstract generate_genome")
-        # raise Exception("Called abstract generate_genome")
-
+        logging.debug("called abstract generate_genome")
+        self.generated_genomes += 1
+        return CnnGenome()

@@ -21,6 +21,8 @@ class Worker:
             tags.TERMINATE_TAG: self.handle_terminate,
             tags.GENOME_TAG: self.handle_genome
         }
+        
+        logging.info(f"worker {self.rank} is beginning")
 
         while not self.done:
             logging.debug(f"worker {self.rank} sending work request")
@@ -39,16 +41,16 @@ class Worker:
                 logging.fatal(f"recieved unrecognized tag {tag} from {source}")
                 self.comm.Abort(1)
         
-        logging.debug(f"worker {self.rank} terminating")
+        logging.info(f"worker {self.rank} terminating")
 
 
     def handle_terminate(self):
-        logging.info(f"worker {self.rank} handling terminate request")
+        logging.debug(f"worker {self.rank} handling terminate request")
         self.done = True
 
 
     def handle_genome(self):
-        logging.info(f"worker {self.rank} handling genome")
+        logging.debug(f"worker {self.rank} handling genome")
 
         genome: CnnGenome = requests.recieve_genome(self.comm, 0)
         genome.train()

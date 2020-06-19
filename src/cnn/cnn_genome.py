@@ -19,5 +19,5 @@ class CnnGenome:
 
 
     def train(self):
-        logging.info("called unimplemented method 'CnnGenome::train'")
+        logging.debug("called unimplemented method 'CnnGenome::train'")
         # raise NotImplementedError

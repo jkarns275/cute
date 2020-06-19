@@ -24,5 +24,6 @@ if __name__ == "__main__":
     pa = ProgramArguments()
     
     logging.basicConfig(level=logging.INFO, format=f'[%(asctime)s][rank {rank}] %(message)s')
-    
+    logging.getLogger().setLevel(logging.INFO)
+
     main(pa, comm, rank)

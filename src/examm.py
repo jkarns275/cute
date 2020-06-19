@@ -51,10 +51,6 @@ class EXAMM:
             IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size,
                                     self.mutation_rate, self.intra_island_co_rate, self.inter_island_co_rate)
 
-        # Each island gets the initial genome
-        self.generated_genomes: int = self.number_islands
-        self.inserted_genomes: int = self.number_islands
-        
         self.rng: np.random.PCG64 = np.random.PCG64(int(str(time.time()).split('.')[1]))
 
 
@@ -63,7 +59,7 @@ class EXAMM:
 
 
     def unimplemented(self, m: str):
-        logging.info(f"called unimplemented method 'EXAMM::{m}'")
+        logging.debug(f"called unimplemented method 'EXAMM::{m}'")
         # raise Exception(f"method 'EXAMM::{m}' has not been implemented")
 
     
@@ -72,20 +68,18 @@ class EXAMM:
 
 
     def generate_genome(self):
-        if self.generated_genomes >= self.max_genomes:
+        if self.get_generated_genomes() >= self.max_genomes:
             return None
 
         genome = self.speciation_strategy.generate_genome(self)
         
-        self.generated_genomes += 1
         self.unimplemented('generate_genome')
 
         return CnnGenome()
     
 
     def try_insert_genome(self, genome: CnnGenome):
-        if self.speciation_strategy.try_insert_genome(genome):
-            self.inserted_genomes += 1
+        self.speciation_strategy.try_insert_genome(genome)
 
 
     def mutate(self, n_mutations: int, genome: CnnGenome):
@@ -94,6 +88,14 @@ class EXAMM:
 
     def crossover(self, better_parent: CnnGenome, worse_parent: CnnGenome):
         self.unimplemented('crossover')
+
+    
+    def get_inserted_genomes(self):
+        return self.speciation_strategy.inserted_genomes
+
+
+    def get_generated_genomes(self):
+        return self.speciation_strategy.generated_genomes
 
 
     def get_worst_genome(self):
