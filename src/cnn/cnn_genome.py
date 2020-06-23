@@ -11,6 +11,8 @@ from cnn import Layer
 from cnn import InputLayer
 from cnn import OutputLayer
 
+from hp import get_dataset
+
 
 class CnnGenome:
 
@@ -31,6 +33,7 @@ class CnnGenome:
         self.output_layer: OutputLayer = output_layer
         self.layer_map: Dict[int, Layer] = layer_map
 
+        self.fitness = 100000.0
     
     def create_model(self):
         input_layer = self.input_layer.get_tf_layer(self.layer_map, self.edge_map)
@@ -42,13 +45,20 @@ class CnnGenome:
 
     def train(self):
         logging.debug("called unimplemented method 'CnnGenome::train'")
-        model = self.create_model()
-        # raise NotImplementedError
+
+        dataset = get_dataset()
 
         # Construct tensorflow model
+        model: keras.Model = self.create_model()
+        model.compile(optimizer='adam', loss='categorical_crossentropy')
 
         # Train it for some set number of epochs
+        history = model.fit(dataset.x_train, dataset.y_train, batch_size=128, epochs=2, validation_data=(dataset.x_test, dataset.y_test), verbose=0)
 
         # Check the fitness
+        fitness = history.history['loss'][-1]
 
         # set the fitness
+        self.fitness = fitness
+
+        logging.info(f"Trained model and got fitness of {self.fitness}")

@@ -1,6 +1,9 @@
 import logging
 import sys
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
+
 from mpi4py import MPI
 
 from master import Master
@@ -54,10 +57,11 @@ def main(pa: ProgramArguments, comm: MPI.Intracomm, rank: int):
 
 
 if __name__ == "__main__":
+    import hp
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     pa = ProgramArguments()
-    
+
     logging.basicConfig(level=logging.DEBUG, format=f'[%(asctime)s][rank {rank}] %(message)s')
     logging.getLogger().setLevel(logging.DEBUG)
 

@@ -1,5 +1,10 @@
 import argparse
 
+from datasets import Dataset
+from hp import set_dataset
+import hp
+
+
 class ProgramArguments(argparse.ArgumentParser):
 
     def __init__(self):
@@ -26,3 +31,12 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=1, type=int, help='the number of iterations of backpropagation to be applied to generated genomes to evaluate them')
 
         self.args = self.parse_args()
+
+        self.set_dataset()
+
+    
+    def set_dataset(self):
+        self.args.dataset = self.args.dataset[0].lower()
+
+        dataset = Dataset.dataset_from_arguments(self)
+        set_dataset(dataset)
