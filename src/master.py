@@ -10,11 +10,12 @@ import requests
 class Master:
 
 
-    def __init__(self, examm: EXAMM, comm: MPI.Intracomm, max_rank: int):
+    def __init__(self, examm: EXAMM, comm: MPI.Intracomm, max_rank: int, make_genome):
         self.examm: EXAMM = examm
         self.comm: MPI.Intracomm = comm
         self.max_rank: int = max_rank
         self.terminates_sent: int = 0
+        self.make_genome = make_genome
 
 
     def run(self):
@@ -42,6 +43,7 @@ class Master:
         
         logging.info("ending master")
 
+
     def done(self):
         return self.terminates_sent >= self.max_rank - 1
 
@@ -50,9 +52,10 @@ class Master:
         logging.debug(f"handling work request from {source}")
         work_request_message = requests.recieve_work_request(self.comm, source)
         
-        genome: CnnGenome = self.examm.generate_genome()
+        genome = self.make_genome()
+        # genome: CnnGenome = self.examm.generate_genome()
 
-        if genome is None:
+        if self.examm.generate_genome() is None:
             logging.debug(f"terminating worker {source}")
 
             requests.send_terminate(self.comm, source)            

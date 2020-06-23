@@ -2,6 +2,16 @@
 import tensorflow as tf
 
 
-_CNN_ACTIVATION_TYPE = lambda: tf.keras.layers.LeakyReLU(alpha=0.1)
+__CNN_ACTIVATION_TYPE = lambda: tf.keras.layers.LeakyReLU(alpha=0.1)
 def make_activation_layer():
-    return _CNN_ACTIVATION_TYPE()
+    return __CNN_ACTIVATION_TYPE()
+
+
+__CNN_CLASSIFICATION_TYPE = tf.keras.layers.Softmax
+def make_classification_layer():
+    return __CNN_CLASSIFICATION_TYPE()
+
+
+__CNN_BATCH_NORM_TYPE = tf.keras.layers.BatchNormalization
+def make_batch_norm_layer():
+    return __CNN_BATCH_NORM_TYPE()

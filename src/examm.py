@@ -75,7 +75,7 @@ class EXAMM:
         
         self.unimplemented('generate_genome')
 
-        return CnnGenome()
+        return genome
     
 
     def try_insert_genome(self, genome: CnnGenome):

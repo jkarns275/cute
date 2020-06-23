@@ -80,4 +80,4 @@ class IslandSpeciationStrategy(SpeciationStrategy):
     def generate_genome(self, examm: 'EXAMM'):
         logging.debug("called abstract generate_genome")
         self.generated_genomes += 1
-        return CnnGenome()
+        return {}

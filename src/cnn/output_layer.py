@@ -1,11 +1,11 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer
-from cnn.conv_edge import ConvEdge
+from hp import make_activation_layer, make_classification_layer
+from cnn.edge import Edge
 from cnn.layer import Layer
 
 
@@ -38,32 +38,38 @@ class OutputLayer(Layer):
         return self.dense_layers[0]
 
 
-    def get_tf_layer(self) -> keras.layers.Layer:
+    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
         if self.tf_layer is not None:
             return self.tf_layer
         
-        number_units = self.dense_layers[0]
-
         # To make it easy to inherit epigenetic weights, we seperate the weights out into separate
         # layers without activation functions, and add the resulting layers together and then apply
         # an activation function.
+        # So these intermediate layers shouldn't have an activation function
+        intermediate_layers: List[tf.Tensor] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
 
-        intermediate_layers = list(map(lambda layer: layer.get_tf_layer(), self.inputs))
+        layer: tf.Tensor = None
 
-        if len(intermediate_layers) > 1:
-            sum_layer = keras.layers.Add()(intermediate_layers)
-        else:
-            sum_layer = intermediate_layers[0]
+        # All but the last dense layer should have the hyper parameter specified activation type.
+        # The last layer should be a classification activation type life softmax or svm
+        for i, size in enumerate(self.dense_layers):
+            
+            # if layer is none we haven't used the intermediate layers yet, so we have to sum them if
+            # there is more than one (if theres only one it will throw an error)
+            if layer is None:
+                if len(intermediate_layers) > 1:
+                    layer = keras.layers.Add()(intermediate_layers)
+                else:
+                    layer = intermediate_layers[0]           
+            else:
+                shape = layer.shape[1:]
+                layer = keras.layers.Dense(size, input_shape=shape, activation='linear')(layer)
 
-        activation_layer: tf.Tensor = make_activation_layer()(sum_layer)
-        
-        layer: tf.Tensor = activation_layer
+            if i == len(self.dense_layers) - 1:
+                layer = make_classification_layer()(layer)
+            else:
+                layer = make_activation_layer()(layer)
 
-        for size in self.dense_layers[1:]:
-            shape = layer.shape[1:]
-            layer = keras.layers.Dense(size, input_shape=shape, activation='linear')(layer)
-            layer = make_activation_layer()(layer)
-        
         self.tf_layer = layer
 
         return self.tf_layer

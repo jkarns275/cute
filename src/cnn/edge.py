@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import tensorflow.keras as keras
 import tensorflow as tf
@@ -18,23 +18,24 @@ class Edge:
         return number
 
 
-    def __init__(self, edge_innovation_number: int, input_shape: Tuple[int, int, int],
-                 output_shape: Tuple[int, int, int], input_layer: 'Layer', output_layer: 'Layer'):
+    def __init__(self, edge_innovation_number: int, input_shape: Tuple[int, int, int], output_shape: Tuple[int, int, int],
+                       input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer']):
         self.edge_innovation_number: int = edge_innovation_number
-        self.input_layer: 'Layer' = input_layer
-        self.output_layer: 'Layer' = output_layer
+        self.input_layer_in: int = input_layer_in
+        self.output_layer_in: int = output_layer_in
        
         self.input_shape: Tuple[int, int, int] = input_shape
         self.output_shape: Tuple[int, int, int] = output_shape
         
         self.tf_layer: Optional[tf.Tensor] = None
         
-        output_layer.add_input(self)
+        layer_map[output_layer_in].add_input_edge(self)
 
     def __getstate__(self):
         # Prevent the tensorflow layer from being pickled
         state = self.__dict__.copy()
         del state['tf_layer']
+        return state
 
 
     def __setstate__(self, state):
@@ -43,5 +44,5 @@ class Edge:
         self.tf_layer = None
 
 
-    def get_tf_layer(self) -> keras.layers.Layer:
+    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, 'Edge']) -> keras.layers.Layer:
         raise NotImplementedError("Call to abstract method Edge::get_tf_layer")

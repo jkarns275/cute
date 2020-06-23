@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 def calculate_required_filter_size(
         stride: int,
@@ -23,3 +23,23 @@ def calculate_output_volume_size(stride: int, padding: int, filter_width: int, f
     h = (height - filter_height + 2 * padding) / stride + 1
     
     return w, h, number_filters
+
+
+def make_layer_map(layers: List['Layer']):
+    layer_map = {}
+
+    for layer in layers:
+        assert layer.layer_innovation_number not in layer_map
+        layer_map[layer.layer_innovation_number] = layer
+
+    return layer_map
+
+
+def make_edge_map(edges: List['Edge']):
+    edge_map = {}
+
+    for edge in edges:
+        assert edge.edge_innovation_number not in edge_map
+        edge_map[edge.edge_innovation_number] = edge
+
+    return edge_map

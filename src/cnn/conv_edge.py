@@ -1,10 +1,10 @@
 import logging
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer
+from hp import make_activation_layer, make_batch_norm_layer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.edge import Edge
 
@@ -12,13 +12,13 @@ from cnn.edge import Edge
 class ConvEdge(Edge):
 
 
-    def __init__(self, edge_innovation_number: int, stride: int, input_layer: 'Layer', output_layer: 'Layer'):
+    def __init__(self, edge_innovation_number: int, stride: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer']):
         self.stride: int = stride
        
-        self.input_shape: Tuple[int, int, int] = input_layer.output_shape
-        self.output_shape: Tuple[int, int, int] = output_layer.output_shape
+        self.input_shape: Tuple[int, int, int] = layer_map[input_layer_in].output_shape
+        self.output_shape: Tuple[int, int, int] = layer_map[output_layer_in].output_shape
         
-        super().__init__(edge_innovation_number, self.input_shape, self.output_shape, input_layer, output_layer)
+        super().__init__(edge_innovation_number, self.input_shape, self.output_shape, input_layer_in, output_layer_in, layer_map)
         
         filter_width, filter_height = \
                 calculate_required_filter_size(stride, *self.input_shape, *self.output_shape)
@@ -44,14 +44,14 @@ class ConvEdge(Edge):
         assert self.tf_layer is not None
 
         shape = self.tf_layer.shape[1:]
-        assert self.output_layer.output_shape == shape
+        assert self.output_shape == shape
 
 
-    def get_tf_layer(self) -> keras.layers.Layer:
+    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
         if self.tf_layer is not None:
             return self.tf_layer
 
-        input_tf_layer: tf.Tensor = self.input_layer.get_tf_layer()
+        input_tf_layer: tf.Tensor = layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
         self.tf_layer = \
                 keras.layers.Conv2D(self.number_filters, 
                                     (self.filter_width, self.filter_height), 
@@ -59,6 +59,7 @@ class ConvEdge(Edge):
                                     activation='linear',
                                     input_shape=self.input_shape)(input_tf_layer)
         
+        self.tf_layer = make_batch_norm_layer()(self.tf_layer)
         self.tf_layer = make_activation_layer()(self.tf_layer)
 
         self.validate_tf_layer_output_volume_size()
