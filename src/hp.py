@@ -15,8 +15,8 @@ def make_classification_layer():
 
 
 __CNN_BATCH_NORM_TYPE = tf.keras.layers.BatchNormalization
-def make_batch_norm_layer():
-    return __CNN_BATCH_NORM_TYPE()
+def make_batch_norm_layer(name=None):
+    return __CNN_BATCH_NORM_TYPE(name=name)
 
 
 # this needs to be set

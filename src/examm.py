@@ -6,7 +6,7 @@ import numpy as np
 from program_arguments import ProgramArguments
 from speciation_strategy import SpeciationStrategy
 from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
-from cnn import CnnGenome
+from cnn import CnnGenome, Edge, ConvEdge, DenseEdge, Layer, InputLayer, OutputLayer, make_layer_map
 
 
 class EXAMM:
@@ -51,11 +51,25 @@ class EXAMM:
             IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size,
                                     self.mutation_rate, self.intra_island_co_rate, self.inter_island_co_rate)
 
-        self.rng: np.random.PCG64 = np.random.PCG64(int(str(time.time()).split('.')[1]))
+        self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
 
 
     def generate_initial_genome(self):
-        self.unimplemented("generate_initial_genome")
+        input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), 28, 28, 1)
+        print(type(input_layer))
+        hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 14, 14, 14)
+        output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [64], 10)
+
+        layer_map = make_layer_map([input_layer, hidden_layer, output_layer])
+
+        edge_1: ConvEdge = ConvEdge(Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
+                                    hidden_layer.layer_innovation_number, layer_map)
+        edge_2: DenseEdge = DenseEdge(Edge.get_next_edge_innovation_number(), hidden_layer.layer_innovation_number,
+                                        output_layer.layer_innovation_number, layer_map)
+        
+        genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2])
+        
+        return genome
 
 
     def unimplemented(self, m: str):
@@ -70,7 +84,7 @@ class EXAMM:
     def generate_genome(self):
         if self.get_generated_genomes() >= self.max_genomes:
             return None
-
+        
         genome = self.speciation_strategy.generate_genome(self)
         
         self.unimplemented('generate_genome')
@@ -84,12 +98,14 @@ class EXAMM:
 
     def mutate(self, n_mutations: int, genome: CnnGenome):
         self.unimplemented('mutate')
+        return genome
 
 
     def crossover(self, better_parent: CnnGenome, worse_parent: CnnGenome):
         self.unimplemented('crossover')
+        return better_parent
 
-    
+
     def get_inserted_genomes(self):
         return self.speciation_strategy.inserted_genomes
 

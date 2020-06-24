@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Set
 
 import tensorflow.keras as keras
 import tensorflow as tf
@@ -16,7 +16,7 @@ class OutputLayer(Layer):
     """
 
 
-    def __init__(self, layer_innovation_number: int, dense_layers: List[int], number_classes: int):
+    def __init__(self, layer_innovation_number: int, dense_layers: List[int], number_classes: int, inputs: Set[int]=set()): 
         """
         Parameters
         ----------
@@ -27,15 +27,23 @@ class OutputLayer(Layer):
             The number of possible output classes. This means the final layer in the network
             will have `number_classes` nodes.
         """
-        super().__init__(layer_innovation_number, number_classes, 1, 1)
-        
+        super().__init__(layer_innovation_number, number_classes, 1, 1, inputs)
+       
         self.layer_innovation_number: int = layer_innovation_number
         self.number_classes: int = number_classes
         self.dense_layers: List[int] = dense_layers + [number_classes]
 
     
+    def copy(self) -> 'OutputLayer':
+        return OutputLayer(self.layer_innovation_number, self.dense_layers[:-1], self.number_classes, self.inputs)
+
+    
     def get_first_layer_size(self):
         return self.dense_layers[0]
+
+    
+    def get_name(self):
+        return f"output_layer_inov_n_{self.layer_innovation_number}"
 
 
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
@@ -63,7 +71,7 @@ class OutputLayer(Layer):
                     layer = intermediate_layers[0]           
             else:
                 shape = layer.shape[1:]
-                layer = keras.layers.Dense(size, input_shape=shape, activation='linear')(layer)
+                layer = keras.layers.Dense(size, input_shape=shape, activation='linear', name=self.get_name() + f"_{i}")(layer)
 
             if i == len(self.dense_layers) - 1:
                 layer = make_classification_layer()(layer)

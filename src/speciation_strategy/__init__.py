@@ -1,3 +1,6 @@
+if False:
+    from examm import EXAMM
+
 class SpeciationStrategy:
 
     def __init__(self):

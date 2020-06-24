@@ -19,6 +19,10 @@ class InputLayer(Layer):
         self.number_channels: int = number_channels
 
 
+    def copy(self) -> 'InputLayer':
+        return InputLayer(self.layer_innovation_number, self.width, self.height, self.number_channels)
+
+
     def add_input(self, input_layer: keras.layers.Layer):
         raise RuntimeError("You cannot add an input to the input layer!")
 

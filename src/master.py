@@ -52,10 +52,9 @@ class Master:
         logging.debug(f"handling work request from {source}")
         work_request_message = requests.recieve_work_request(self.comm, source)
         
-        genome = self.make_genome()
-        # genome: CnnGenome = self.examm.generate_genome()
+        genome: CnnGenome = self.examm.generate_genome()
 
-        if self.examm.generate_genome() is None:
+        if genome is None:
             logging.debug(f"terminating worker {source}")
 
             requests.send_terminate(self.comm, source)            

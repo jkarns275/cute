@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Set
 
 import tensorflow.keras as keras
 import tensorflow as tf
@@ -20,7 +20,7 @@ class Layer:
         return number
 
 
-    def __init__(self, layer_innovation_number: int, width: int, height: int, depth: int):
+    def __init__(self, layer_innovation_number: int, width: int, height: int, depth: int, inputs: Set[int]=set()):
         self.layer_innovation_number: int = layer_innovation_number
         
         self.width: int = width
@@ -29,7 +29,8 @@ class Layer:
 
         self.output_shape: Tuple[int, int, int] = (width, height, depth)
 
-        self.inputs: List[Edge] = []
+        # Input edge innovation numbers
+        self.inputs: Set[int] = inputs
 
         self.tf_layer: Optional[tf.Tensor] = None
 
@@ -45,6 +46,10 @@ class Layer:
         # Not sure if this is necessary but just make  
         self.__dict__.update(state)
         self.tf_layer = None
+
+    
+    def copy(self) -> 'Layer':
+        return Layer(self.layer_innovation_number, self.width, self.height, self.depth, self.inputs)
 
 
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
@@ -63,7 +68,11 @@ class Layer:
 
 
     def add_input_edge(self, input_edge: Edge):
-        self.inputs.append(input_edge.edge_innovation_number)
+        if input_edge.edge_innovation_number in self.inputs:
+            logging.info(f"tried to add input edge {input_edge.edge_innovation_number} to layer {self.layer_innovation_number} more than once")
+            return
+
+        self.inputs.add(input_edge.edge_innovation_number)
         self.validate_input_edge(input_edge)
         
         # Just make sure the computation graph hasn't been created yet.

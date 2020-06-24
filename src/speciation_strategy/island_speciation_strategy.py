@@ -4,6 +4,8 @@ from typing import List
 from speciation_strategy import SpeciationStrategy
 from cnn import CnnGenome
 from speciation_strategy.island import Island
+if False:
+    from examm import EXAMM
 
 class IslandSpeciationStrategy(SpeciationStrategy):
 
@@ -14,6 +16,8 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         self.population_size = population_size
         self.number_islands = number_islands
 
+        self.initial_genome: CnnGenome = initial_genome
+        
         self.islands: List[Island] = list(map(lambda _: Island(population_size), range(number_islands)))
         self.global_best_genome = initial_genome
         self.global_worst_genome = initial_genome
@@ -21,6 +25,9 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         self.mutation_rate: float = mutation_rate
         self.inter_island_crossover_rate: float = inter_island_crossover_rate
         self.intra_island_crossover_rate: float = intra_island_crossover_rate
+
+        # We need to rotate through islands 0 through n - 1, this is the counter we'll use
+        self.island_turn: int = 0
 
         # Make sure these rates sum to 1.0
         assert 0.9999 < mutation_rate + inter_island_crossover_rate + intra_island_crossover_rate < 1.00001
@@ -77,7 +84,39 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         logging.debug("called abstract get_global_worst_genome")
         # raise Exception("Called abstract get_global_worst_genome")
 
+    
+    def next_island_turn(self):
+        # this could be replaced with modulus
+        turn = self.island_turn
+        
+        self.island_turn += 1
+        if self.island_turn == self.number_islands:
+            self.island_turn = 0
+        
+        return turn
+
+
     def generate_genome(self, examm: 'EXAMM'):
         logging.debug("called abstract generate_genome")
         self.generated_genomes += 1
-        return {}
+        island_turn = self.next_island_turn()
+        
+        if self.inserted_genomes == 0:
+            genome = self.initial_genome.copy()
+            genome.island = island_turn
+            return genome
+        else:
+            
+            # This should only happen during the beginning of the program
+            if self.islands[island_turn].empty():
+                genome = self.initial_genome
+                genome.island = island_turn
+            else:
+                genome = self.islands[island_turn].get_random_genome(examm.rng)
+
+            genome = genome.copy()
+
+            logging.info("note: we should be performing a mutation or crossover here but do not")
+
+            return genome
+

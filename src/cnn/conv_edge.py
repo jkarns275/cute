@@ -7,6 +7,8 @@ import tensorflow as tf
 from hp import make_activation_layer, make_batch_norm_layer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.edge import Edge
+if False:
+    from cnn.layer import Layer
 
 
 class ConvEdge(Edge):
@@ -32,6 +34,10 @@ class ConvEdge(Edge):
         self.tf_layer: Optional[tf.Tensor] = None        
 
 
+    def copy(self, layer_map: Dict[int, 'Layer']) -> 'ConvEdge':
+        return ConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map)
+
+
     def validate_output_volume_size(self):
         # Assume 0 padding.
         width, height, depth = calculate_output_volume_size(self.stride, 0, self.filter_width, self.filter_height, 
@@ -47,6 +53,10 @@ class ConvEdge(Edge):
         assert self.output_shape == shape
 
 
+    def get_name(self):
+        return f"conv_edge_inov_n_{self.edge_innovation_number}"
+    
+
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
         if self.tf_layer is not None:
             return self.tf_layer
@@ -57,9 +67,10 @@ class ConvEdge(Edge):
                                     (self.filter_width, self.filter_height), 
                                     strides=(self.stride, self.stride),
                                     activation='linear',
-                                    input_shape=self.input_shape)(input_tf_layer)
+                                    input_shape=self.input_shape,
+                                    name=self.get_name())(input_tf_layer)
         
-        self.tf_layer = make_batch_norm_layer()(self.tf_layer)
+        self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)
         self.tf_layer = make_activation_layer()(self.tf_layer)
 
         self.validate_tf_layer_output_volume_size()

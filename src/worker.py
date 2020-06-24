@@ -1,5 +1,7 @@
-from mpi4py import MPI
 import logging
+
+from mpi4py import MPI
+import tensorflow as tf
 
 from examm import EXAMM
 from cnn.cnn_genome import CnnGenome
@@ -14,6 +16,9 @@ class Worker:
         self.rank: int = rank
         self.comm: MPI.Intracomm = comm
         self.done: bool = False
+        
+        tf.config.threading.set_inter_op_parallelism_threads(1)
+        tf.config.threading.set_intra_op_parallelism_threads(1)
 
 
     def run(self):

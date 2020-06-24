@@ -4,6 +4,9 @@ from typing import List, Tuple, Optional, Dict
 import tensorflow.keras as keras
 import tensorflow as tf
 
+if False:
+    from cnn.layer import Layer
+
 
 class Edge:
 
@@ -12,9 +15,9 @@ class Edge:
 
 
     @staticmethod
-    def get_next_layer_innovation_number():
-        number = ConvEdge.NEXT_EDGE_INNOVATION_NUMBER
-        ConvEdge.NEXT_EDGE_INNOVATION_NUMBER = number + 1
+    def get_next_edge_innovation_number():
+        number = Edge.NEXT_EDGE_INNOVATION_NUMBER
+        Edge.NEXT_EDGE_INNOVATION_NUMBER = number + 1
         return number
 
 
