@@ -38,23 +38,23 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return True, otherwise it will return False.
         """
-        logging.debug("called disabled method IslandSpeciationStrategy")
-        return True
 
-        if self.global_best_genome.mse > genome.mse:
+        if self.global_best_genome.fitness > genome.fitness:
             self.global_best_genome = genome
         
         removed_genome, insert_position  = self.islands[genome.island].try_insert_genome(genome)
-        inserted = removed_genome != None and insert_position >= 0
-
+        inserted = removed_genome != None or insert_position >= 0
+        
         if not inserted:
             return False
-        elif removed_genome == self.global_worst_genome and insert_position == self.global_worst_genome:
-            self.global_worst_genome = genome
         
-            self.inserted_genomes += 1
-
-            return True
+        self.inserted_genomes += 1
+        
+        # If this is the new global worst genome...
+        if removed_genome == self.global_worst_genome and insert_position == self.population_size - 1:
+            self.global_worst_genome = genome
+            
+        return True
 
 
     def get_best_fitness(self):
@@ -108,12 +108,13 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         else:
             
             # This should only happen during the beginning of the program
-            if self.islands[island_turn].empty():
+            if self.islands[island_turn].is_empty():
                 genome = self.initial_genome
-                genome.island = island_turn
             else:
                 genome = self.islands[island_turn].get_random_genome(examm.rng)
-
+                
+            genome.island = island_turn
+            
             genome = genome.copy()
 
             logging.info("note: we should be performing a mutation or crossover here but do not")

@@ -56,7 +56,6 @@ class EXAMM:
 
     def generate_initial_genome(self):
         input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), 28, 28, 1)
-        print(type(input_layer))
         hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 14, 14, 14)
         output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [64], 10)
 

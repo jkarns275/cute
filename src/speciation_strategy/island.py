@@ -17,10 +17,10 @@ class Island:
     
     def try_insert_genome(self, genome: CnnGenome):
         logging.info(f"inserting genome with fitness of {genome.fitness}")
+        
         if len(self.population) < self.population_size:
             self.population.append(genome)
             return None, 0
-
         elif self.population[-1].fitness > genome.fitness:
             insert_position = sorted_insert(genome, self.population, key=lambda genome: genome.fitness)
             genome = self.population.pop()
@@ -29,6 +29,8 @@ class Island:
             assert insert_position < self.population_size
 
             return genome, insert_position
+        else:
+            return None, -1
 
     
     def get_random_genome(self, rng: np.random.Generator):
@@ -67,3 +69,7 @@ class Island:
 
     def is_full(self):
         return len(self.population) == self.population_size
+
+
+    def is_empty(self):
+        return len(self.population) == 0

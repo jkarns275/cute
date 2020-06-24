@@ -48,7 +48,7 @@ class CnnGenome:
         # Not sure what type the weights will be
         self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
   
-        self.island = None
+        self.island: int = -1
 
 
     def copy(self) -> 'CnnGenome':
@@ -111,6 +111,8 @@ class CnnGenome:
         new_weights = {}
 
         for layer in model.layers:
-            new_weights[layer.name] = layer.get_weights()
+            weights = layer.get_weights()
+            if weights:
+                new_weights[layer.name] = layer.get_weights()
 
         self.epigenetic_weights = new_weights

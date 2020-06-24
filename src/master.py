@@ -67,4 +67,5 @@ class Master:
     def handle_genome(self, source: int):
         logging.debug(f"handling genome from {source}")
         genome: CnnGenome = requests.recieve_genome(self.comm, source)
+        logging.debug(f"recieved genome with fitness of {genome.fitness}")
         self.examm.try_insert_genome(genome)
