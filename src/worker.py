@@ -26,7 +26,7 @@ class Worker:
                 for gpu in gpus:
                     tf.config.experimental.set_memory_growth(gpu, True)
                 logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-                logginf.info(f"found {len(gpus)} gpus, and {len(logical_gpus)} physical GPUs")
+                logging.info(f"found {len(gpus)} gpus, and {len(logical_gpus)} physical GPUs")
             except RuntimeError as e:
                 # Memory growth must be set before GPUs have been initialized
                 print(e)
