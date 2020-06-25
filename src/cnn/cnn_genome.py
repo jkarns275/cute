@@ -299,7 +299,7 @@ class CnnGenome:
         self.accuracy = accuracy
         self.history = history.history
 
-        logging.info(f"finished training of model with initial accuracy of {accuracy:.6f}, fitness = {self.fitness:.6f}")
+        logging.info(f"finished training of model with final accuracy of {accuracy:.6f}, fitness = {self.fitness:.6f}")
 
         new_weights = {}
 
