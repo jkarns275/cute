@@ -20,7 +20,8 @@ class CnnGenome:
 
     def __init__(self,  number_outputs: int, input_layer: InputLayer, output_layer: OutputLayer,
                         layer_map: Dict[int, Layer], conv_edges: List[ConvEdge], output_edges: List[DenseEdge],
-                        epigenetic_weights: Dict[str, Any]={}, fitness: float=float('inf'), history: Any={}):
+                        epigenetic_weights: Dict[str, Any]={}, fitness: float=float('inf'), history: Optional[Any]=None,
+                        accuracy: float=-0.0):
         # When this object is serialized the input and output layer in this map are copied so we need to make sure
         # we use the same object, otherwise layer_map[input_layer.layer_innovation_number] and input_layer will be
         # equal but different objects.
@@ -45,7 +46,8 @@ class CnnGenome:
         self.layer_map: Dict[int, Layer] = layer_map
 
         self.fitness: float = fitness
-        self.history: Any = history.copy()
+        self.accuracy: float = accuracy 
+        self.history: Optional[Any] = history.copy() if history else None
 
         # Not sure what type the weights will be
         self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
@@ -53,15 +55,20 @@ class CnnGenome:
         self.island: int = -1
 
 
-    def copy(self) -> 'CnnGenome':
-        copy_edge = lambda edge: edge.copy(self.layer_map)
+    def copy(self) -> 'CnnGenome':        
+        layer_map = {}
+        for innovation_number, layer in self.layer_map.items():
+            copy = layer.copy()
+            
+            copy.inputs = set()
+            copy.outputs = set()
+
+            layer_map[innovation_number] = copy
+
+        copy_edge = lambda edge: edge.copy(layer_map)
         
         conv_edges = list(map(copy_edge, self.conv_edges))
         output_edges = list(map(copy_edge, self.output_edges))
-        
-        layer_map = {}
-        for innovation_number, layer in self.layer_map.items():
-            layer_map[innovation_number] = layer.copy()
 
         # Make sure we're using the same object for input_edge and output_edge even though it probably doesn't matter
         input_layer: InputLayer = cast(InputLayer, layer_map[self.input_layer.layer_innovation_number])
@@ -71,7 +78,8 @@ class CnnGenome:
         assert type(output_layer) == OutputLayer
 
         return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
-                            epigenetic_weights=self.epigenetic_weights, fitness=self.fitness, history=self.history)
+                            epigenetic_weights=self.epigenetic_weights, fitness=self.fitness, accuracy=self.accuracy, 
+                            history=self.history)
 
         
     def path_exists(self, src: Layer, dst: Layer) -> bool:
@@ -125,14 +133,14 @@ class CnnGenome:
             output_edge = DenseEdge(   Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number, 
                                 output_layer.layer_innovation_number, self.layer_map)
             self.output_edges.append(output_edge)
-            edge: Edge = cast(Edge, output_edge)
+            edge = cast(Edge, output_edge)
         else:
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to layer " + \
                          f"{output_layer.layer_innovation_number}")
             conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
                                     output_layer.layer_innovation_number, self.layer_map)
             self.conv_edges.append(conv_edge)
-            edge: Edge = cast(Edge, conv_edge)
+            edge = cast(Edge, conv_edge)
         
         self.edge_map[edge.edge_innovation_number] = cast(Edge, edge)
 
@@ -203,6 +211,8 @@ class CnnGenome:
             logging.info(f"lower = {lower_width}, upper = {upper_width}")
             volume_size = rng.integers(lower_width, upper_width)
             width, height = volume_size, volume_size
+        
+        logging.info(f"volume size is {width}, {height}, {depth}")
 
         layer = Layer(Layer.get_next_layer_innovation_number(), width, height, depth)
         
@@ -223,8 +233,16 @@ class CnnGenome:
         # keep trying until we successfully find two layers we can connect
         while True:
             input_layer, output_layer = self.get_two_random_layers(rng)
-
+            
+            # If this is the case adding an edge would create a cycle
             if self.path_exists(output_layer, input_layer):
+                continue
+
+            input_width, input_height, input_depth = input_layer.output_shape
+            output_width, output_height, output_depth = output_layer.output_shape
+            
+            # This could lead to a negative filter size / invalid
+            if input_width < output_width or input_height < output_height:
                 continue
 
             maybe_layer: Optional[Layer] = self.try_make_new_layer(input_layer, output_layer, rng)
@@ -259,6 +277,7 @@ class CnnGenome:
 
         # Construct tensorflow model
         model: keras.Model = self.create_model()
+        logging.info(f"model has {model.count_params()} parameters")
         
         # set any epigenetic weights
         if self.epigenetic_weights:
@@ -273,12 +292,14 @@ class CnnGenome:
 
         # Check the fitness
         fitness = history.history['loss'][-1]
+        accuracy = history.history['categorical_accuracy'][-1]
 
         # set the fitness
         self.fitness = fitness
+        self.accuracy = accuracy
         self.history = history.history
 
-        logging.info(f"finished training of model with initial accuracy of {self.history['categorical_accuracy'][-1]:.6f}, fitness = {self.fitness:.6f}")
+        logging.info(f"finished training of model with initial accuracy of {accuracy:.6f}, fitness = {self.fitness:.6f}")
 
         new_weights = {}
 

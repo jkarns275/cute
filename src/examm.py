@@ -1,12 +1,14 @@
 import time
+import pickle
 import logging
 
 import numpy as np
 
+from cnn import CnnGenome, Edge, ConvEdge, DenseEdge, Layer, InputLayer, OutputLayer, make_layer_map
 from program_arguments import ProgramArguments
 from speciation_strategy import SpeciationStrategy
 from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
-from cnn import CnnGenome, Edge, ConvEdge, DenseEdge, Layer, InputLayer, OutputLayer, make_layer_map
+from fitness_log import FitnessLog
 
 
 class EXAMM:
@@ -39,7 +41,9 @@ class EXAMM:
         self.number_islands: int = program_arguments.args.number_islands
         self.bp_iterations: int = program_arguments.args.backprop_iterations
         self.max_genomes: int = program_arguments.args.max_genomes
-        self.output_directory: str = program_arguments.args.output_directory
+        self.output_directory: str = program_arguments.args.output_directory[0]
+
+        self.fitness_log: FitnessLog = FitnessLog(self.output_directory)
 
         initial_genome: CnnGenome = self.generate_initial_genome()
 
@@ -107,12 +111,17 @@ class EXAMM:
         else:
             assert False
 
-
         return genome
     
 
     def try_insert_genome(self, genome: CnnGenome):
-        self.speciation_strategy.try_insert_genome(genome)
+        insertion_type: str = self.speciation_strategy.try_insert_genome(genome)
+
+        if insertion_type == "new_best":
+            best_genome: CnnGenome = self.speciation_strategy.get_best_genome()
+            pickle.dump(best_genome, open(f"{self.output_directory}/{self.get_generated_genomes()}.cnn_genome", "bw"))
+
+        self.fitness_log.update_log(self)
 
 
     def mutate(self, n_mutations: int, genome: CnnGenome):
@@ -148,4 +157,10 @@ class EXAMM:
     def get_worst_fitness(self):
         return self.speciation_strategy.get_worst_fitness()
 
+    
+    def get_best_accuracy(self):
+        return self.speciation_strategy.get_best_accuracy()
 
+
+    def get_worst_accuracy(self):
+        return self.speciation_strategy.get_worst_accuracy()

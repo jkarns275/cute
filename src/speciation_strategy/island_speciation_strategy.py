@@ -33,7 +33,7 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         assert 0.9999 < mutation_rate + inter_island_crossover_rate + intra_island_crossover_rate < 1.00001
         
 
-    def try_insert_genome(self, genome: CnnGenome):
+    def try_insert_genome(self, genome: CnnGenome) -> str:
         """
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return True, otherwise it will return False.
@@ -41,12 +41,15 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
         if self.global_best_genome.fitness > genome.fitness:
             self.global_best_genome = genome
+            new_best = True
+        else:
+            new_best = False
         
         removed_genome, insert_position  = self.islands[genome.island].try_insert_genome(genome)
         inserted = removed_genome != None or insert_position >= 0
         
         if not inserted:
-            return False
+            return None
         
         self.inserted_genomes += 1
         
@@ -54,17 +57,15 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         if removed_genome == self.global_worst_genome and insert_position == self.population_size - 1:
             self.global_worst_genome = genome
             
-        return True
+        return "new_best" if new_best else "inserted"
 
 
     def get_best_fitness(self):
-        logging.debug("called abstract get_best_fitness")        
-        # raise Exception("Called abstract get_best_fitness")
+        return self.global_best_genome.fitness
 
 
     def get_worst_fitness(self):
-        logging.debug("called abstract get_worst_fitness")
-        # raise Exception("Called abstact get_worst_fitness")
+        return self.global_worst_genome.fitness
 
 
     def get_generated_genomes(self):
@@ -75,14 +76,20 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         return self.inserted_genomes
 
 
-    def get_global_best_genome(self):
-        logging.debug("called abstract get_global_best_genome")
-        # raise Exception("Called abstract get_global_best_genome")
+    def get_best_genome(self):
+        return self.global_best_genome
 
 
-    def get_global_worst_genome(self):
-        logging.debug("called abstract get_global_worst_genome")
-        # raise Exception("Called abstract get_global_worst_genome")
+    def get_worst_genome(self):
+        return self.global_worst_genome
+
+
+    def get_best_accuracy(self):
+        return self.global_best_genome.fitness
+
+    
+    def get_worst_accuracy(self):
+        return self.global_worst_genome.fitness
 
     
     def next_island_turn(self):
@@ -97,7 +104,6 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
 
     def generate_genome(self, examm: 'EXAMM'):
-        logging.debug("called abstract generate_genome")
         self.generated_genomes += 1
         island_turn = self.next_island_turn()
         
