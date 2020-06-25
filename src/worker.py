@@ -17,9 +17,19 @@ class Worker:
         self.comm: MPI.Intracomm = comm
         self.done: bool = False
         
-        tf.config.threading.set_inter_op_parallelism_threads(1)
-        tf.config.threading.set_intra_op_parallelism_threads(1)
-
+        # tf.config.threading.set_inter_op_parallelism_threads(1)
+        # tf.config.threading.set_intra_op_parallelism_threads(1)
+        gpus = tf.config.experimental.list_physical_devices('GPU')
+        if gpus:
+            try:
+                # Currently, memory growth needs to be the same across GPUs
+                for gpu in gpus:
+                    tf.config.experimental.set_memory_growth(gpu, True)
+                logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+                logginf.info(f"found {len(gpus)} gpus, and {len(logical_gpus)} physical GPUs")
+            except RuntimeError as e:
+                # Memory growth must be set before GPUs have been initialized
+                print(e)
 
     def run(self):
         handlers = {
