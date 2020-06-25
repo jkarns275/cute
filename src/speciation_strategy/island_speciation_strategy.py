@@ -85,11 +85,11 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
 
     def get_best_accuracy(self):
-        return self.global_best_genome.fitness
+        return self.global_best_genome.accuracy
 
     
     def get_worst_accuracy(self):
-        return self.global_worst_genome.fitness
+        return self.global_worst_genome.accuracy
 
     
     def next_island_turn(self):
