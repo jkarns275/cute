@@ -20,7 +20,7 @@ def make_batch_norm_layer(name=None):
     return __CNN_BATCH_NORM_TYPE(name=name)
 
 
-__CNN_LAYER_VOLUME_DEPTHS = (1, 2, 4, 8, 16, 32, 64, 128, 256, 512)
+__CNN_LAYER_VOLUME_DEPTHS = (1, 2, 4, 8, 16, 32, 64, 128, 256)
 def get_random_volume_depth(rng: np.random.Generator):
     return __CNN_LAYER_VOLUME_DEPTHS[rng.integers(0, len(__CNN_LAYER_VOLUME_DEPTHS))]
 
