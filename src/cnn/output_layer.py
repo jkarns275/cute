@@ -16,7 +16,8 @@ class OutputLayer(Layer):
     """
 
 
-    def __init__(self, layer_innovation_number: int, dense_layers: List[int], number_classes: int, inputs: Set[int]=set()): 
+    def __init__(self, layer_innovation_number: int, dense_layers: List[int], number_classes: int, 
+                       inputs: Set[int]=set(), outputs: Set[int]=set()): 
         """
         Parameters
         ----------
@@ -27,7 +28,7 @@ class OutputLayer(Layer):
             The number of possible output classes. This means the final layer in the network
             will have `number_classes` nodes.
         """
-        super().__init__(layer_innovation_number, number_classes, 1, 1, inputs)
+        super().__init__(layer_innovation_number, number_classes, 1, 1, inputs=inputs, outputs=outputs)
        
         self.layer_innovation_number: int = layer_innovation_number
         self.number_classes: int = number_classes
@@ -35,7 +36,8 @@ class OutputLayer(Layer):
 
     
     def copy(self) -> 'OutputLayer':
-        return OutputLayer(self.layer_innovation_number, self.dense_layers[:-1], self.number_classes, self.inputs)
+        return OutputLayer( self.layer_innovation_number, self.dense_layers[:-1], self.number_classes, 
+                            inputs=self.inputs, outputs=self.outputs)
 
     
     def get_first_layer_size(self):

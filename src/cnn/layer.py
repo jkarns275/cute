@@ -20,7 +20,8 @@ class Layer:
         return number
 
 
-    def __init__(self, layer_innovation_number: int, width: int, height: int, depth: int, inputs: Set[int]=set()):
+    def __init__(self,  layer_innovation_number: int, width: int, height: int, depth: int,
+                        inputs: Set[int]=set(), outputs: Set[int]=set()):
         self.layer_innovation_number: int = layer_innovation_number
         
         self.width: int = width
@@ -30,7 +31,9 @@ class Layer:
         self.output_shape: Tuple[int, int, int] = (width, height, depth)
 
         # Input edge innovation numbers
-        self.inputs: Set[int] = inputs
+        self.inputs: Set[int] = inputs.copy()
+        # Output edge innovation numbers
+        self.outputs: Set[int] = outputs.copy()
 
         self.tf_layer: Optional[tf.Tensor] = None
 
@@ -49,7 +52,8 @@ class Layer:
 
     
     def copy(self) -> 'Layer':
-        return Layer(self.layer_innovation_number, self.width, self.height, self.depth, self.inputs)
+        return Layer(   self.layer_innovation_number, self.width, self.height, self.depth,
+                        inputs=self.inputs, outputs=self.outputs)
 
 
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
@@ -77,11 +81,25 @@ class Layer:
         
         # Just make sure the computation graph hasn't been created yet.
         assert self.tf_layer is None
+    
+
+    def add_output_edge(self, output_edge: Edge):
+        if output_edge.edge_innovation_number in self.outputs:
+            logging.info(f"tried to add output edge {output_edge.edge_innovation_number} to layer {self.layer_innovation_number} more than once")
+            return
         
+        self.outputs.add(output_edge.edge_innovation_number)
+        self.validate_output_edge(output_edge)
+
 
     def validate_input_edge(self, input_edge: Edge):
         shape = input_edge.output_shape
-        assert shape == (self.width, self.height, self.depth)
+        assert shape == self.output_shape
+    
+
+    def validate_output_edge(self, output_edge: Edge):
+        shape = output_edge.input_shape
+        assert shape == self.output_shape
 
 
     def validate_tf_inputs(self, tf_inputs: List[tf.Tensor]):

@@ -33,6 +33,8 @@ class Edge:
         self.tf_layer: Optional[tf.Tensor] = None
         
         layer_map[output_layer_in].add_input_edge(self)
+        layer_map[input_layer_in].add_output_edge(self)
+
 
     def __getstate__(self):
         # Prevent the tensorflow layer from being pickled

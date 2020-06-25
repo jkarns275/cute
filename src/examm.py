@@ -67,7 +67,15 @@ class EXAMM:
                                         output_layer.layer_innovation_number, layer_map)
         
         genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2])
-        
+       
+        logging.info("performing some tests of CnnGenome::path_exists")
+
+        assert genome.path_exists(input_layer, output_layer)
+        assert genome.path_exists(input_layer, hidden_layer)
+        assert not genome.path_exists(output_layer, input_layer)
+        assert not genome.path_exists(hidden_layer, input_layer)
+
+
         return genome
 
 
@@ -83,10 +91,22 @@ class EXAMM:
     def generate_genome(self):
         if self.get_generated_genomes() >= self.max_genomes:
             return None
+
+        # Grab genome from speciation strategy
+        genome: CnnGenome = self.speciation_strategy.generate_genome(self)
         
-        genome = self.speciation_strategy.generate_genome(self)
-        
-        self.unimplemented('generate_genome')
+        choice = self.rng.integers(0, 3)
+        # Do something
+        if choice == 0:
+            genome.add_edge_mut(self.rng)
+        elif choice == 1:
+            genome.add_layer_mut(self.rng)
+        elif choice == 2:
+            # clone
+            pass
+        else:
+            assert False
+
 
         return genome
     
