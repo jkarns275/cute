@@ -291,8 +291,10 @@ class CnnGenome:
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=128, epochs=2, validation_data=(dataset.x_test, dataset.y_test), verbose=0)
 
         # Check the fitness
-        fitness = history.history['loss'][-1]
-        accuracy = history.history['categorical_accuracy'][-1]
+        fitness = history.history['val_loss'][-1]
+        accuracy = history.history['val_categorical_accuracy'][-1]
+
+        print(history.history)
 
         # set the fitness
         self.fitness = fitness
