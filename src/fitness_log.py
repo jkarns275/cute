@@ -79,6 +79,7 @@ class FitnessLog:
 
         try:
             self.file.write(line)
+            self.file.flush()
         except Exception as e:
             logging.fatal("Encountered fatal error when trying to write to fitness log: \n" + str(e))
             sys.exit(-1)
