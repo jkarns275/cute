@@ -201,7 +201,7 @@ class CnnGenome:
             lower_width, lower_height, lower_depth = lower_bound_layer.output_shape
             assert lower_width == lower_height
             
-            if upper_width < lower_width:
+            if upper_width <= lower_width:
                 return None
 
             # If this is 3 then the lower must be 2 and we cannot create a size inbetween 2 and 3
