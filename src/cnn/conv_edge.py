@@ -62,7 +62,7 @@ class ConvEdge(Edge):
             return self.tf_layer
 
         input_tf_layer: tf.Tensor = layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
-        logging.info(f"filter size: {self.filter_width, self.filter_height}")
+        
         self.tf_layer = \
                 keras.layers.Conv2D(self.number_filters, 
                                     (self.filter_width, self.filter_height), 
