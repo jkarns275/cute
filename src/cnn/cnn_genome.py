@@ -288,7 +288,7 @@ class CnnGenome:
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
         # Train it for some set number of epochs
-        history = model.fit(dataset.x_train, dataset.y_train, batch_size=128, epochs=2, validation_data=(dataset.x_test, dataset.y_test), verbose=0)
+        history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
 
         # Check the fitness
         fitness = history.history['val_loss'][-1]

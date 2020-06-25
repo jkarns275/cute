@@ -25,6 +25,17 @@ def get_random_volume_depth(rng: np.random.Generator):
     return __CNN_LAYER_VOLUME_DEPTHS[rng.integers(0, len(__CNN_LAYER_VOLUME_DEPTHS))]
 
 
+# The higher this is the more vram that will be consumed
+__CNN_TRAINING_BATCH_SIZE = 8
+def get_batch_size():
+    return __CNN_TRAINING_BATCH_SIZE
+
+
+__CNN_TRAINING_N_EPOCHS = 1
+def get_number_epochs():
+    return __CNN_TRAINING_N_EPOCHS
+
+
 # this needs to be set
 __DATASET = 0
 def set_dataset(dataset):
