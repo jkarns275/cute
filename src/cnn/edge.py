@@ -22,7 +22,7 @@ class Edge:
 
 
     def __init__(self, edge_innovation_number: int, input_shape: Tuple[int, int, int], output_shape: Tuple[int, int, int],
-                       input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer']):
+                       input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer'], enabled: bool=True):
         self.edge_innovation_number: int = edge_innovation_number
         self.input_layer_in: int = input_layer_in
         self.output_layer_in: int = output_layer_in
@@ -32,7 +32,7 @@ class Edge:
         
         self.tf_layer: Optional[tf.Tensor] = None
         
-        self.enabled: bool = True
+        self.enabled: bool = enabled
 
         layer_map[output_layer_in].add_input_edge(self)
         layer_map[input_layer_in].add_output_edge(self)

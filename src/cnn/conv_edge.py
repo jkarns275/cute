@@ -14,13 +14,14 @@ if False:
 class ConvEdge(Edge):
 
 
-    def __init__(self, edge_innovation_number: int, stride: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer']):
+    def __init__(self, edge_innovation_number: int, stride: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer'],
+                       enabled: bool=True):
         self.stride: int = stride
        
         self.input_shape: Tuple[int, int, int] = layer_map[input_layer_in].output_shape
         self.output_shape: Tuple[int, int, int] = layer_map[output_layer_in].output_shape
         
-        super().__init__(edge_innovation_number, self.input_shape, self.output_shape, input_layer_in, output_layer_in, layer_map)
+        super().__init__(edge_innovation_number, self.input_shape, self.output_shape, input_layer_in, output_layer_in, layer_map, enabled)
         
         filter_width, filter_height = \
                 calculate_required_filter_size(stride, *self.input_shape, *self.output_shape)
@@ -35,7 +36,7 @@ class ConvEdge(Edge):
 
 
     def copy(self, layer_map: Dict[int, 'Layer']) -> 'ConvEdge':
-        return ConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map)
+        return ConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map, self.enabled)
 
 
     def validate_output_volume_size(self):
@@ -67,7 +68,7 @@ class ConvEdge(Edge):
         maybe_input_tf_layer: Optional[tf.Tensor] = \
                 layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
         
-        if not maybe_input_tf_layer:
+        if maybe_input_tf_layer is None:
             return None
         
         input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)

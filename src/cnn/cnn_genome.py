@@ -20,8 +20,8 @@ class CnnGenome:
 
     def __init__(self,  number_outputs: int, input_layer: InputLayer, output_layer: OutputLayer,
                         layer_map: Dict[int, Layer], conv_edges: List[ConvEdge], output_edges: List[DenseEdge],
-                        epigenetic_weights: Dict[str, Any]={}, fitness: float=float('inf'), history: Optional[Any]=None,
-                        accuracy: float=-0.0):
+                        epigenetic_weights: Dict[str, Any]={}, disabled_edges: Set[int]=set(), fitness: float=float('inf'),
+                        history: Optional[Any]=None, accuracy: float=-0.0):
         # When this object is serialized the input and output layer in this map are copied so we need to make sure
         # we use the same object, otherwise layer_map[input_layer.layer_innovation_number] and input_layer will be
         # equal but different objects.
@@ -44,13 +44,14 @@ class CnnGenome:
         self.input_layer: InputLayer = input_layer
         self.output_layer: OutputLayer = output_layer
         self.layer_map: Dict[int, Layer] = layer_map
+        self.disabled_edges: Set[int] = disabled_edges.copy()
 
         self.fitness: float = fitness
         self.accuracy: float = accuracy 
         self.history: Optional[Any] = history.copy() if history else None
 
         # Not sure what type the weights will be
-        self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
+        self.epigenetic_weights: Dict[str, Any] = epigenetic_weights.copy()
   
         self.island: int = -1
 
@@ -78,10 +79,10 @@ class CnnGenome:
         assert type(output_layer) == OutputLayer
 
         return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
-                            epigenetic_weights=self.epigenetic_weights, fitness=self.fitness, accuracy=self.accuracy, 
-                            history=self.history)
+                            epigenetic_weights=self.epigenetic_weights, disabled_edges=self.disabled_edges,
+                            fitness=self.fitness, accuracy=self.accuracy, history=self.history)
 
-        
+
     def path_exists(self, src: Layer, dst: Layer, include_disabled=True) -> bool:
         """
         returns True if there is a path from src to dst, otherwise false
@@ -92,24 +93,28 @@ class CnnGenome:
 
         # Edges we should traverse
         edges_to_visit: List[int] = list(src.outputs)
-    
+        
         # While we've not reached the destination and 
         while dst.layer_innovation_number not in visited and edges_to_visit:
             next_edge_in = edges_to_visit.pop()
             next_edge: Edge = self.edge_map[next_edge_in]
-            layer: Layer = self.layer_map[next_edge.output_layer_in]
             
-            if not include_disabled and next_edge in self.disabled_edges():
+            
+            if not include_disabled and next_edge_in in self.disabled_edges:
                 continue
+            
 
-            if layer.layer_innovation_number in visited:
+            if next_edge.output_layer_in in visited:
                 continue
+            
+            layer: Layer = self.layer_map[next_edge.output_layer_in]
             
             if layer.layer_innovation_number == dst.layer_innovation_number:
                 return True
 
+
             for edge_in in layer.outputs:
-                if include_disabled or self.edge_map[edge_in].is_enabled():
+                if include_disabled or edge_in not in self.disabled_edges:
                     edges_to_visit.append(edge_in)
            
             visited.add(next_edge.output_layer_in)
@@ -189,6 +194,7 @@ class CnnGenome:
         between them. If an edge cannot be created, two different layers will be selected. 
         This process will be repeated until an edge is successfully created.
         """
+        logging.info("attempting add_edge mutation")
 
         # Try it a lot but don't stall forever...
         n = 0
@@ -258,6 +264,8 @@ class CnnGenome:
         output layer would create a cycle then two different layers are selected. 
         This will be repeated until two valid layers are selected
         """
+        logging.info("attempting add_layer mutation")
+        
         # Try a bunch but don't hang forever!
         n = 0
         while n < 400:
@@ -291,6 +299,59 @@ class CnnGenome:
                 return True
 
         return False
+    
+    
+    def enable_edge(self, edge_in: int):
+        if edge_in not in self.disabled_edges:
+            logging.info(f"attempted to enable edge {edge_in} that was already enabled")
+
+        self.disabled_edges.remove(edge_in)
+        self.edge_map[edge_in].enable()
+
+
+    def disable_edge(self, edge_in: int):
+        if edge_in in self.disabled_edges:
+            logging.info(f"attempted to disable {edge_in} that was already disabled")
+
+        self.disabled_edges.add(edge_in)
+        self.edge_map[edge_in].disable()
+
+
+    def enable_edge_mut(self, rng: np.random.Generator) -> bool:
+        logging.info("attempting enable_edge mutation")
+        
+        if not self.disabled_edges:
+            return False
+
+        disabled_edges: List[int] = list(self.disabled_edges)
+        index: int = rng.integers(0, len(disabled_edges))
+        edge_in: int = disabled_edge[index]
+
+        self.set_edge_enabled(edge_in, True)
+        self.disabled_edges.remove(edge_in)
+
+        return True
+
+    
+    def disable_edge_mut(self, rng: np.random.Generator) -> bool:
+        logging.info("attempting disable_edge mutation")
+        
+        # We will attempt to disable edges until we succeed or we tried every edge.
+        get_in = lambda edge: edge.edge_innovation_number
+        all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
+        rng.shuffle(all_edges)
+        
+        for edge_in in all_edges:
+            self.disable_edge(edge_in)
+
+            if self.path_exists(self.input_layer, self.output_layer, False):
+                edge = self.edge_map[edge_in]
+                logging.info(f"disabling edge {edge} from {edge.input_layer_in} to {edge.output_layer_in}")
+                return True
+
+            self.enable_edge(edge_in)
+
+        return False
 
     def create_model(self):
         input_layer = self.input_layer.get_tf_layer(self.layer_map, self.edge_map)
@@ -304,7 +365,7 @@ class CnnGenome:
         logging.debug("called unimplemented method 'CnnGenome::train'")
         
         if self.history:
-            logging.info(f"beginning training of model with initial accuracy of {self.history['categorical_accuracy'][-1]:.6f}, fitness = {self.fitness:.6f}")
+            logging.info(f"beginning training of model with initial accuracy of {self.accuracy:.6f}, fitness = {self.fitness:.6f}")
         else:
             logging.info(f"beginning training of new model")
 
@@ -317,8 +378,13 @@ class CnnGenome:
         # set any epigenetic weights
         if self.epigenetic_weights:
             logging.info("inheriting epigenetic weights")
+
         for layer_name, weights in self.epigenetic_weights.items():
-            model.get_layer(layer_name).set_weights(weights)
+            try:
+                model.get_layer(layer_name).set_weights(weights)
+            except ValueError as _ve:
+                # The layer was disabled
+                pass
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 
@@ -343,4 +409,4 @@ class CnnGenome:
             if weights:
                 new_weights[layer.name] = layer.get_weights()
 
-        self.epigenetic_weights = new_weights
+        self.epigenetic_weights.update(new_weights)
