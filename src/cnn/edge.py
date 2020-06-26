@@ -32,6 +32,8 @@ class Edge:
         
         self.tf_layer: Optional[tf.Tensor] = None
         
+        self.enabled: bool = True
+
         layer_map[output_layer_in].add_input_edge(self)
         layer_map[input_layer_in].add_output_edge(self)
 
@@ -47,6 +49,22 @@ class Edge:
         # Not sure if this is necessary but just make  
         self.__dict__.update(state)
         self.tf_layer = None
+
+    
+    def is_enabled(self):
+        return self.enabled
+
+
+    def enable(self):
+        self.enabled = True
+
+
+    def is_disabled(self):
+        return not self.enabled
+
+
+    def disable(self):
+        self.enabled = False
 
 
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, 'Edge']) -> keras.layers.Layer:

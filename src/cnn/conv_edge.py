@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, cast
 
 import tensorflow.keras as keras
 import tensorflow as tf
@@ -57,12 +57,21 @@ class ConvEdge(Edge):
         return f"conv_edge_inov_n_{self.edge_innovation_number}"
     
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[tf.Tensor]:
+        if self.is_disabled():
+            return None
+
         if self.tf_layer is not None:
             return self.tf_layer
 
-        input_tf_layer: tf.Tensor = layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
+        maybe_input_tf_layer: Optional[tf.Tensor] = \
+                layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
         
+        if not maybe_input_tf_layer:
+            return None
+        
+        input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)
+
         self.tf_layer = \
                 keras.layers.Conv2D(self.number_filters, 
                                     (self.filter_width, self.filter_height), 
