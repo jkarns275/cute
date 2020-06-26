@@ -135,6 +135,12 @@ class CnnGenome:
                 edge.output_layer_in == output_layer.layer_innovation_number:
                 return None
 
+        # No negative filter sizes
+        input_width, input_height, input_depth = input_layer.output_shape
+        output_width, output_height, output_depth = output_layer.output_shape
+        if input_width < output_width or input_Height < output_height:
+            return None
+
         # if output_layer is the final output layer then we need to make a dense edge
         if type(output_layer) == OutputLayer:
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to output layer " + \
