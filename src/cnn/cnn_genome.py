@@ -120,18 +120,27 @@ class CnnGenome:
         """
         assert input_layer.layer_innovation_number != output_layer.layer_innovation_number
         
+        # Cannot
         if type(input_layer) == OutputLayer:
             return None
 
+        # No cycles
         if self.path_exists(output_layer, input_layer):
             return None
+
+        # No duplicate edges
+        for edge_in in input_layer.outputs:
+            edge = self.edge_map[edge_in]
+            if  edge.input_layer_in == input_layer.layer_innovation_number and \
+                edge.output_layer_in == output_layer.layer_innovation_number:
+                return None
 
         # if output_layer is the final output layer then we need to make a dense edge
         if type(output_layer) == OutputLayer:
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to output layer " + \
                          f"{output_layer.layer_innovation_number}")
-            output_edge = DenseEdge(   Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number, 
-                                output_layer.layer_innovation_number, self.layer_map)
+            output_edge = DenseEdge(Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number, 
+                                    output_layer.layer_innovation_number, self.layer_map)
             self.output_edges.append(output_edge)
             edge = cast(Edge, output_edge)
         else:
