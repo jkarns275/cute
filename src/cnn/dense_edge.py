@@ -42,15 +42,23 @@ class DenseEdge(Edge):
 
 
     def get_tf_layer(self, layer_map: Dict[int, Layer], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+        if self.is_disabled():
+            return None
+
         if self.tf_layer is not None:
             return self.tf_layer
-        
+         
         input_layer: Layer = layer_map[self.input_layer_in]
         output_layer: OutputLayer = cast(OutputLayer, layer_map[self.output_layer_in])
 
         assert type(output_layer) == OutputLayer
 
-        input_tf_layer: tf.Tensor = input_layer.get_tf_layer(layer_map, edge_map)
+        maybe_input_tf_layer: Optional[tf.Tensor] = input_layer.get_tf_layer(layer_map, edge_map)
+        
+        if not maybe_input_tf_layer:
+            return None
+
+        input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)
 
         width, height, depth = input_layer.output_shape
         

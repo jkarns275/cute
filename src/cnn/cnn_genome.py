@@ -82,7 +82,7 @@ class CnnGenome:
                             history=self.history)
 
         
-    def path_exists(self, src: Layer, dst: Layer) -> bool:
+    def path_exists(self, src: Layer, dst: Layer, include_disabled=True) -> bool:
         """
         returns True if there is a path from src to dst, otherwise false
         """
@@ -98,6 +98,9 @@ class CnnGenome:
             next_edge_in = edges_to_visit.pop()
             next_edge: Edge = self.edge_map[next_edge_in]
             layer: Layer = self.layer_map[next_edge.output_layer_in]
+            
+            if not include_disabled and next_edge in self.disabled_edges():
+                continue
 
             if layer.layer_innovation_number in visited:
                 continue
@@ -106,7 +109,8 @@ class CnnGenome:
                 return True
 
             for edge_in in layer.outputs:
-                edges_to_visit.append(edge_in)
+                if include_disabled or self.edge_map[edge_in].is_enabled():
+                    edges_to_visit.append(edge_in)
            
             visited.add(next_edge.output_layer_in)
 

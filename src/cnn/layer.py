@@ -56,11 +56,17 @@ class Layer:
                         inputs=self.inputs, outputs=self.outputs)
 
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[keras.layers.Layer]:
         if self.tf_layer is not None:
             return self.tf_layer
 
-        input_layers: List[tf.Tensor] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        maybe_input_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        input_layers: List[tf.Tensor] = [x for x in maybe_input_layers if x is not None]
+            
+        # There are no inputs return None
+        if not input_layers:
+            return None
+
         self.validate_tf_inputs(input_layers)
         
         if len(input_layers) > 1:
