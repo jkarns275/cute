@@ -126,6 +126,7 @@ class CnnGenome:
 
         # No cycles
         if self.path_exists(output_layer, input_layer):
+            logging.info(f"not creating edge from {input_layer.layer_innovation_number} to {output_layer.layer_innovation_number} because it would create a cycle")
             return None
 
         # No duplicate edges
@@ -133,13 +134,9 @@ class CnnGenome:
             edge = self.edge_map[edge_in]
             if  edge.input_layer_in == input_layer.layer_innovation_number and \
                 edge.output_layer_in == output_layer.layer_innovation_number:
+                logging.info(   f"not creating edge from {input_layer.layer_innovation_number} " + \
+                                f"to {output_layer.layer_innovation_number} because that edge already exists")
                 return None
-
-        # No negative filter sizes
-        input_width, input_height, input_depth = input_layer.output_shape
-        output_width, output_height, output_depth = output_layer.output_shape
-        if input_width < output_width or input_height < output_height:
-            return None
 
         # if output_layer is the final output layer then we need to make a dense edge
         if type(output_layer) == OutputLayer:
@@ -150,6 +147,14 @@ class CnnGenome:
             self.output_edges.append(output_edge)
             edge = cast(Edge, output_edge)
         else:
+            # No negative filter sizes
+            input_width, input_height, input_depth = input_layer.output_shape
+            output_width, output_height, output_depth = output_layer.output_shape
+            if input_width < output_width or input_height < output_height:
+                logging.info(   f"not creating edge from {input_layer.layer_innovation_number} " + \
+                                f"to {output_layer.layer_innovation_number} because the input volume is smaller")
+    
+                return None
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to layer " + \
                          f"{output_layer.layer_innovation_number}")
             conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
@@ -174,20 +179,25 @@ class CnnGenome:
         return self.layer_map[layers[layer_1_index]], self.layer_map[layers[layer_2_index]]
 
 
-    def add_edge_mut(self, rng: np.random.Generator):
+    def add_edge_mut(self, rng: np.random.Generator) -> bool:
         """
         This performs an add edge mutation by randomly selecting two layers and trying to create an edge
         between them. If an edge cannot be created, two different layers will be selected. 
         This process will be repeated until an edge is successfully created.
         """
 
-        # keep trying until we successfully create a new edge
-        while True:
+        # Try it a lot but don't stall forever...
+        n = 0
+        while n < 100:
             input_layer, output_layer = self.get_two_random_layers(rng)
             edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer)
 
             if edge:
-                break
+                return True
+
+            n += 1
+
+        return False
 
 
     def try_make_new_layer(self, upper_bound_layer: Layer, lower_bound_layer: Layer, rng: np.random.Generator) -> Optional[Layer]:
@@ -244,9 +254,11 @@ class CnnGenome:
         output layer would create a cycle then two different layers are selected. 
         This will be repeated until two valid layers are selected
         """
-   
-        # keep trying until we successfully find two layers we can connect
-        while True:
+        # Try a bunch but don't hang forever!
+        n = 0
+        while n < 400:
+            n += 1
+            
             input_layer, output_layer = self.get_two_random_layers(rng)
             
             # If this is the case adding an edge would create a cycle
@@ -255,22 +267,26 @@ class CnnGenome:
 
             input_width, input_height, input_depth = input_layer.output_shape
             output_width, output_height, output_depth = output_layer.output_shape
-            
+           
+            logging.info("input layer shape = " + str(input_layer.output_shape))
+            logging.info("output layer shape = " + str(output_layer.output_shape))
+
             # This could lead to a negative filter size / invalid
-            if input_width < output_width or input_height < output_height:
+            if input_width < output_width + 4 or input_height < output_height + 4:
                 continue
 
             maybe_layer: Optional[Layer] = self.try_make_new_layer(input_layer, output_layer, rng)
 
             if maybe_layer:
-                break
-        
-        layer: Layer = cast(Layer, maybe_layer)
+                layer: Layer = cast(Layer, maybe_layer)
 
-        # Assertions here because these should not fail
-        assert self.try_make_new_edge(input_layer, layer)
-        assert self.try_make_new_edge(layer, output_layer)
+                # Assertions here because these should not fail
+                assert self.try_make_new_edge(input_layer, layer)
+                assert self.try_make_new_edge(layer, output_layer)
 
+                return True
+
+        return False
 
     def create_model(self):
         input_layer = self.input_layer.get_tf_layer(self.layer_map, self.edge_map)
