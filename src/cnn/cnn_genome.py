@@ -309,8 +309,6 @@ class CnnGenome:
         fitness = history.history['val_loss'][-1]
         accuracy = history.history['val_categorical_accuracy'][-1]
 
-        print(history.history)
-
         # set the fitness
         self.fitness = fitness
         self.accuracy = accuracy
