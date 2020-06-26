@@ -26,7 +26,7 @@ def get_random_volume_depth(rng: np.random.Generator):
 
 
 # The higher this is the more vram that will be consumed
-__CNN_TRAINING_BATCH_SIZE = 8
+__CNN_TRAINING_BATCH_SIZE = 64
 def get_batch_size():
     return __CNN_TRAINING_BATCH_SIZE
 

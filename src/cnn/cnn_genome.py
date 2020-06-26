@@ -142,7 +142,7 @@ class CnnGenome:
         # No negative filter sizes
         input_width, input_height, input_depth = input_layer.output_shape
         output_width, output_height, output_depth = output_layer.output_shape
-        if input_width < output_width or input_Height < output_height:
+        if input_width < output_width or input_height < output_height:
             return None
 
         # if output_layer is the final output layer then we need to make a dense edge
@@ -312,8 +312,6 @@ class CnnGenome:
         # Check the fitness
         fitness = history.history['val_loss'][-1]
         accuracy = history.history['val_categorical_accuracy'][-1]
-
-        print(history.history)
 
         # set the fitness
         self.fitness = fitness
