@@ -4,9 +4,10 @@ examm-tf is meant to be an implementation of EXAMM which evolves convolutional n
 
 # TODO:
 A list of things that need to be done:
-1. worker process logic
-2. design and implementation of the cnn genome
-3. mutations and crossover operations (dependent on [2])
-4. implementation of island speciation strategy
-5. handling program arguments
-6. dataset processing / choosing a format
+- [x] master and worker process logic
+- [x] design and implementation of the cnn genome
+- [x] implementation of island speciation strategy
+- [ ] mutations and crossover operations (dependent on [2])
+- [x] handling program arguments
+- [ ] dataset processing - currently only support MNIST
+- [ ] intelligently handle multiple GPUS, train multiple networks on the same gpu if possible
