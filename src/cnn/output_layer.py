@@ -56,7 +56,15 @@ class OutputLayer(Layer):
         # layers without activation functions, and add the resulting layers together and then apply
         # an activation function.
         # So these intermediate layers shouldn't have an activation function
-        intermediate_layers: List[tf.Tensor] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        maybe_intermediate_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        
+        # filter out nones
+        intermediate_layers: List[tf.Tensor] = [x for x in maybe_intermediate_layers if x is not None]
+        
+        if not intermediate_layers:
+            logging.fatal(f"output layer has no inputs!")
+
+        assert intermediate_layers
 
         layer: tf.Tensor = None
 

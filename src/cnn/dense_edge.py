@@ -14,19 +14,20 @@ from cnn.output_layer import OutputLayer
 class DenseEdge(Edge):
 
 
-    def __init__(self, edge_innovation_number: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, Layer]):
+    def __init__(self,  edge_innovation_number: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, Layer],
+                        enabled: bool=True):
         self.input_shape: Tuple[int, int, int] = layer_map[input_layer_in].output_shape
         self.output_shape: Tuple[int, int, int] = layer_map[output_layer_in].output_shape
         
         super().__init__(   edge_innovation_number, self.input_shape, self.output_shape,
-                            input_layer_in, output_layer_in, layer_map)
+                            input_layer_in, output_layer_in, layer_map, enabled)
         
         self.tf_layer: Optional[tf.Tensor] = None
         assert type(layer_map[output_layer_in]) == OutputLayer
        
 
     def copy(self, layer_map: Dict[int, Layer]) -> 'DenseEdge':
-        return DenseEdge(self.edge_innovation_number, self.input_layer_in, self.output_layer_in, layer_map)
+        return DenseEdge(self.edge_innovation_number, self.input_layer_in, self.output_layer_in, layer_map, self.enabled)
 
 
     def validate_tf_layer_output_volume_size(self):
@@ -55,7 +56,7 @@ class DenseEdge(Edge):
 
         maybe_input_tf_layer: Optional[tf.Tensor] = input_layer.get_tf_layer(layer_map, edge_map)
         
-        if not maybe_input_tf_layer:
+        if maybe_input_tf_layer is None:
             return None
 
         input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)

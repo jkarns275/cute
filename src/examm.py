@@ -99,17 +99,26 @@ class EXAMM:
         # Grab genome from speciation strategy
         genome: CnnGenome = self.speciation_strategy.generate_genome(self)
         
-        choice = self.rng.integers(0, 3)
-        # Do something
-        if choice == 0:
-            genome.add_edge_mut(self.rng)
-        elif choice == 1:
-            genome.add_layer_mut(self.rng)
-        elif choice == 2:
-            # clone
-            pass
-        else:
-            assert False
+        while True:
+            choice = self.rng.integers(0, 4)
+
+            if choice == 0:
+                if genome.add_edge_mut(self.rng):
+                    break
+            elif choice == 1:
+                if genome.add_layer_mut(self.rng):
+                    break
+            elif choice == 2:
+                # clone
+                break
+            elif choice == 3:
+                if genome.disable_edge_mut(self.rng):
+                    break
+            elif choice == 4:
+                if genome.enable_edge_mut(self.rng):
+                    break
+            else:
+                assert False
 
         return genome
     
