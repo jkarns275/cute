@@ -17,6 +17,19 @@ from worker import Worker
 from datasets import Dataset
 from program_arguments import ProgramArguments
 
+def gpu_fix():
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+            logging.info(f"found {len(gpus)} gpus, and {len(logical_gpus)} physical GPUs")
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+
 
 def graph_genome_main(args: List[str]):
     
@@ -70,6 +83,8 @@ def evo_main():
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
+
+    gpu_fix()
 
     if sys.argv[1] == "graph_genome":
         graph_genome_main(sys.argv)
