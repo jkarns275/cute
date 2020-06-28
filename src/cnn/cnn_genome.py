@@ -374,7 +374,9 @@ class CnnGenome:
         # Construct tensorflow model
         model: keras.Model = self.create_model()
         logging.info(f"model has {model.count_params()} parameters")
-        
+
+
+
         # set any epigenetic weights
         if self.epigenetic_weights:
             logging.info("inheriting epigenetic weights")
@@ -387,6 +389,9 @@ class CnnGenome:
                 pass
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        
+        loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
+        logging.info(f"calculated acc {acc}")
 
         # Train it for some set number of epochs
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)

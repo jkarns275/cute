@@ -31,7 +31,7 @@ def get_batch_size():
     return __CNN_TRAINING_BATCH_SIZE
 
 
-__CNN_TRAINING_N_EPOCHS = 3
+__CNN_TRAINING_N_EPOCHS = 1
 def get_number_epochs():
     return __CNN_TRAINING_N_EPOCHS
 
