@@ -36,10 +36,12 @@ class IslandSpeciationStrategy(SpeciationStrategy):
     def try_insert_genome(self, genome: CnnGenome) -> str:
         """
         Attempts to insert the supplied genome.
-        If the genome is inserted, this method will return True, otherwise it will return False.
+        If the genome is inserted, this method will return "inserted", otherwise it will return None
+        If the genome is the new global best it will return "new_best"
         """
 
         if self.global_best_genome.fitness > genome.fitness:
+            print(f"{self.global_best_genome.fitness} > {genome.fitness}")
             self.global_best_genome = genome
             new_best = True
         else:
