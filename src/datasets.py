@@ -7,22 +7,27 @@ if False:
 
 
 class Dataset:
-    
+
+    @staticmethod
+    def make_mnist_dataset():
+        # logging.info("note: the mnist data set is getting truncated for the purpose of debugging.")
+        (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data(path="mnist.npz")
+        
+        x_train = x_train.reshape(-1, 28, 28, 1)
+        x_test = x_test.reshape(-1, 28, 28, 1)
+
+        y_train = keras.utils.to_categorical(y_train)
+        y_test = keras.utils.to_categorical(y_test)
+
+        return Dataset(x_train, y_train, x_test, y_test, 28, 28, 1)
+
+
     @staticmethod
     def dataset_from_arguments(program_arguments: 'ProgramArguments'):
         dataset_str = program_arguments.args.dataset
 
         if dataset_str == "mnist":
-            # logging.info("note: the mnist data set is getting truncated for the purpose of debugging.")
-            (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data(path="mnist.npz")
-            
-            x_train = x_train.reshape(-1, 28, 28, 1)
-            x_test = x_test.reshape(-1, 28, 28, 1)
-
-            y_train = keras.utils.to_categorical(y_train)
-            y_test = keras.utils.to_categorical(y_test)
-
-            return Dataset(x_train, y_train, x_test, y_test, 28, 28, 1)
+            return Dataset.make_mnist_dataset()
         else:
             raise NotImplementedError(f"dataset '{dataset_str}' has not been implemented")
 

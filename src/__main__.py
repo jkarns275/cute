@@ -9,16 +9,17 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # or any {'0', '1', '2'}
 from mpi4py import MPI
 import tensorflow as tf
 
+import hp
+from cnn import ConvEdge, CnnGenome, DenseEdge, Edge, Layer, InputLayer, OutputLayer
+from examm import EXAMM
 from master import Master
 from worker import Worker
+from datasets import Dataset
 from program_arguments import ProgramArguments
-from examm import EXAMM
 
 
 def graph_genome_main(args: List[str]):
-    from cnn import ConvEdge, CnnGenome, DenseEdge, Edge, Layer, InputLayer, OutputLayer
-    from cnn.cnn_util import make_layer_map
-
+    
     genome_path = args[2]
     image_dst = args[3]
 
@@ -31,7 +32,7 @@ def graph_genome_main(args: List[str]):
     tf.keras.utils.plot_model(
         model,
         to_file=image_dst,
-        show_shapes=False,
+        show_shapes=True,
         show_layer_names=True,
         rankdir="TB",
         expand_nested=False,
@@ -39,12 +40,20 @@ def graph_genome_main(args: List[str]):
     )
 
 
+def train_genome_main(args: List[str]):
+    hp.set_dataset(Dataset.make_mnist_dataset())
+    genome_path = args[2]
+    
+    genome: CnnGenome = pickle.load(open(genome_path, 'rb'))
+
+    genome.train()
+
+
 def evo_main():
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
 
     logging.basicConfig(level=logging.DEBUG, format=f'[%(asctime)s][rank {rank}] %(message)s')
-    logging.getLogger().setLevel(logging.DEBUG)
     
     pa = ProgramArguments()
 
@@ -60,10 +69,11 @@ def evo_main():
 
 
 if __name__ == "__main__":
-    import hp
-    
+    logging.getLogger().setLevel(logging.DEBUG)
 
     if sys.argv[1] == "graph_genome":
         graph_genome_main(sys.argv)
+    elif sys.argv[1] == "train_genome":
+        train_genome_main(sys.argv)
     else:
         evo_main()
