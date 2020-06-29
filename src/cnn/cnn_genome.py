@@ -1,5 +1,6 @@
 import logging
-from typing import List, Dict, Any, Optional, Tuple, Set, cast
+from typing import List, Dict, Any, Optional, Tuple, Set, Iterator, cast
+from itertools import product
 
 from tensorflow import keras
 import numpy as np
@@ -126,16 +127,16 @@ class CnnGenome:
         """
         Attempts to make a new edge but will return None if creating the new edge would lead
         to an invalid neural network graph (i.e. there is a cycle).
-        """
-        assert input_layer.layer_innovation_number != output_layer.layer_innovation_number
-        
+        """ 
+        if input_layer.layer_innovation_number == output_layer.layer_innovation_number:
+            return None
+
         # Cannot
         if type(input_layer) == OutputLayer:
             return None
 
         # No cycles
         if self.path_exists(output_layer, input_layer):
-            logging.info(f"not creating edge from {input_layer.layer_innovation_number} to {output_layer.layer_innovation_number} because it would create a cycle")
             return None
 
         # No duplicate edges
@@ -143,8 +144,6 @@ class CnnGenome:
             edge = self.edge_map[edge_in]
             if  edge.input_layer_in == input_layer.layer_innovation_number and \
                 edge.output_layer_in == output_layer.layer_innovation_number:
-                logging.info(   f"not creating edge from {input_layer.layer_innovation_number} " + \
-                                f"to {output_layer.layer_innovation_number} because that edge already exists")
                 return None
 
         # if output_layer is the final output layer then we need to make a dense edge
@@ -159,11 +158,10 @@ class CnnGenome:
             # No negative filter sizes
             input_width, input_height, input_depth = input_layer.output_shape
             output_width, output_height, output_depth = output_layer.output_shape
+            
             if input_width < output_width or input_height < output_height:
-                logging.info(   f"not creating edge from {input_layer.layer_innovation_number} " + \
-                                f"to {output_layer.layer_innovation_number} because the input volume is smaller")
-    
                 return None
+            
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to layer " + \
                          f"{output_layer.layer_innovation_number}")
             conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
@@ -176,16 +174,15 @@ class CnnGenome:
         return edge
     
 
-    def get_two_random_layers(self, rng: np.random.Generator) -> Tuple[Layer, Layer]:
-        layers: List[int] = list(self.layer_map.keys())
-        
-        layer_1_index: int = rng.integers(0, len(layers))
-        
-        layer_2_index: int = rng.integers(0, len(layers) - 1)
-        if layer_2_index >= layer_1_index:
-            layer_2_index += 1
+    def get_random_layer_pair_iterator(self, rng: np.random.Generator) -> Iterator[Tuple[Layer, Layer]]:
+        input_layer_ins = list(self.layer_map.keys())
+        output_layer_ins = input_layer_ins.copy()
 
-        return self.layer_map[layers[layer_1_index]], self.layer_map[layers[layer_2_index]]
+        rng.shuffle(input_layer_ins)
+        rng.shuffle(output_layer_ins)
+
+        # Try every combination until we find one that works, or we exhaust all combinations.
+        return product(input_layer_ins, output_layer_ins)
 
 
     def add_edge_mut(self, rng: np.random.Generator) -> bool:
@@ -196,16 +193,15 @@ class CnnGenome:
         """
         logging.info("attempting add_edge mutation")
 
-        # Try it a lot but don't stall forever...
-        n = 0
-        while n < 100:
-            input_layer, output_layer = self.get_two_random_layers(rng)
+        # Try every combination until we find one that works, or we exhaust all combinations.
+        for input_layer_in, output_layer_in in self.get_random_layer_pair_iterator(rng):
+            input_layer = self.layer_map[input_layer_in]
+            output_layer = self.layer_map[output_layer_in]
+            
             edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer)
 
             if edge:
                 return True
-
-            n += 1
 
         return False
 
@@ -243,11 +239,10 @@ class CnnGenome:
             if upper_width <= 3:
                 assert lower_width == 2
                 return None
-            logging.info(f"lower = {lower_width}, upper = {upper_width}")
+
             volume_size = rng.integers(lower_width, upper_width)
             width, height = volume_size, volume_size
         
-        logging.info(f"volume size is {width}, {height}, {depth}")
 
         layer = Layer(Layer.get_next_layer_innovation_number(), width, height, depth)
         
@@ -266,12 +261,9 @@ class CnnGenome:
         """
         logging.info("attempting add_layer mutation")
         
-        # Try a bunch but don't hang forever!
-        n = 0
-        while n < 400:
-            n += 1
-            
-            input_layer, output_layer = self.get_two_random_layers(rng)
+        for input_layer_in, output_layer_in in self.get_random_layer_pair_iterator(rng):
+            input_layer = self.layer_map[input_layer_in]
+            output_layer = self.layer_map[output_layer_in]
             
             # If this is the case adding an edge would create a cycle
             if self.path_exists(output_layer, input_layer):
@@ -280,9 +272,6 @@ class CnnGenome:
             input_width, input_height, input_depth = input_layer.output_shape
             output_width, output_height, output_depth = output_layer.output_shape
            
-            logging.info("input layer shape = " + str(input_layer.output_shape))
-            logging.info("output layer shape = " + str(output_layer.output_shape))
-
             # This could lead to a negative filter size / invalid
             if input_width < output_width + 4 or input_height < output_height + 4:
                 continue
@@ -333,15 +322,19 @@ class CnnGenome:
         return True
 
     
+    def get_random_edge_iterator(self, rng: np.random.Generator) -> bool:
+        get_in = lambda edge: edge.edge_innovation_number
+        all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
+        rng.shuffle(all_edges)
+
+        return all_edges
+    
+    
     def disable_edge_mut(self, rng: np.random.Generator) -> bool:
         logging.info("attempting disable_edge mutation")
         
         # We will attempt to disable edges until we succeed or we tried every edge.
-        get_in = lambda edge: edge.edge_innovation_number
-        all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
-        rng.shuffle(all_edges)
-        
-        for edge_in in all_edges:
+        for edge_in in self.get_random_edge_iterator(rng):
             self.disable_edge(edge_in)
 
             if self.path_exists(self.input_layer, self.output_layer, False):
@@ -362,8 +355,6 @@ class CnnGenome:
     
 
     def train(self):
-        logging.debug("called unimplemented method 'CnnGenome::train'")
-        
         if self.history:
             logging.info(f"beginning training of model with initial accuracy of {self.accuracy:.6f}, fitness = {self.fitness:.6f}")
         else:
@@ -389,9 +380,9 @@ class CnnGenome:
                 pass
 
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-        
-        loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
-        logging.info(f"calculated acc {acc}")
+       
+        # loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
+        # logging.info(f"calculated acc {acc}")
 
         # Train it for some set number of epochs
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)

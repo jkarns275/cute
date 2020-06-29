@@ -10,12 +10,11 @@ import requests
 class Master:
 
 
-    def __init__(self, examm: EXAMM, comm: MPI.Intracomm, max_rank: int, make_genome):
+    def __init__(self, examm: EXAMM, comm: MPI.Intracomm, max_rank: int):
         self.examm: EXAMM = examm
         self.comm: MPI.Intracomm = comm
         self.max_rank: int = max_rank
         self.terminates_sent: int = 0
-        self.make_genome = make_genome
 
 
     def run(self):

@@ -1,6 +1,6 @@
 import argparse
 
-from datasets import Dataset
+from dataset import Dataset
 from hp import set_dataset
 import hp
 
@@ -33,8 +33,13 @@ class ProgramArguments(argparse.ArgumentParser):
         self.args = self.parse_args()
 
         self.set_dataset()
+        self.set_number_epochs()
 
-    
+
+    def set_number_epochs(self):
+        hp.set_number_epochs(self.args.backprop_iterations)
+   
+
     def set_dataset(self):
         self.args.dataset = self.args.dataset[0].lower()
 

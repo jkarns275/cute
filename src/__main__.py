@@ -14,7 +14,7 @@ from cnn import ConvEdge, CnnGenome, DenseEdge, Edge, Layer, InputLayer, OutputL
 from examm import EXAMM
 from master import Master
 from worker import Worker
-from datasets import Dataset
+from dataset import Dataset
 from program_arguments import ProgramArguments
 
 def gpu_fix():
@@ -74,7 +74,7 @@ def evo_main():
         max_rank: int = comm.Get_size()
 
         examm: EXAMM = EXAMM(pa)
-        master = Master(examm, comm, max_rank, make_genome)
+        master = Master(examm, comm, max_rank)
         master.run()
     else:
         worker = Worker(rank, comm)

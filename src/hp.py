@@ -2,7 +2,7 @@
 import tensorflow as tf
 import numpy as np
 
-from datasets import Dataset
+from dataset import Dataset
 
 
 __CNN_ACTIVATION_TYPE = lambda: tf.keras.layers.LeakyReLU(alpha=0.1)
@@ -32,6 +32,9 @@ def get_batch_size():
 
 
 __CNN_TRAINING_N_EPOCHS = 1
+def set_number_epochs(epochs: int):
+    __CNN_TRAINING_N_EPOCHS = epochs
+
 def get_number_epochs():
     return __CNN_TRAINING_N_EPOCHS
 

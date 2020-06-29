@@ -41,7 +41,6 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         """
 
         if self.global_best_genome.fitness > genome.fitness:
-            print(f"{self.global_best_genome.fitness} > {genome.fitness}")
             self.global_best_genome = genome
             new_best = True
         else:
