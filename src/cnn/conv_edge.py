@@ -25,6 +25,10 @@ class ConvEdge(Edge):
         
         filter_width, filter_height = \
                 calculate_required_filter_size(stride, *self.input_shape, *self.output_shape)
+
+        assert filter_width > 0
+        assert filter_height > 0
+
         self.filter_width: int = filter_width
         self.filter_height: int = filter_height
         self.number_filters: int = self.output_shape[2]

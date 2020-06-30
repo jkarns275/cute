@@ -1,4 +1,5 @@
 from typing import Tuple, Optional, List
+import logging
 
 if False:
     from cnn import Edge, Layer
@@ -47,3 +48,12 @@ def make_edge_map(edges: List['Edge']):
         edge_map[edge.edge_innovation_number] = edge
 
     return edge_map
+
+
+def get_possible_strides(   input_width: int, input_height: int, _input_depth: int,
+                            output_width: int, output_height: int, _output_depth: int) -> List[int]:
+    assert input_width == input_height
+    # I think this is the correct calculation...
+    max_stride = max(-input_width // (1 - output_width) - 1, 1)
+
+    return list(range(1, max_stride + 1))

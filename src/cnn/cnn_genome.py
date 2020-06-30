@@ -5,7 +5,7 @@ from itertools import product
 from tensorflow import keras
 import numpy as np
 
-from cnn.cnn_util import make_edge_map
+from cnn.cnn_util import make_edge_map, get_possible_strides
 from cnn import Edge
 from cnn import ConvEdge
 from cnn import DenseEdge
@@ -123,10 +123,11 @@ class CnnGenome:
         return False
 
 
-    def try_make_new_edge(self, input_layer: Layer, output_layer: Layer) -> Optional[Edge]:
+    def try_make_new_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
         """
         Attempts to make a new edge but will return None if creating the new edge would lead
         to an invalid neural network graph (i.e. there is a cycle).
+        The stride is randomly selected from all possible strides (unless a DenseEdge is created, which has no stride).
         """ 
         if input_layer.layer_innovation_number == output_layer.layer_innovation_number:
             return None
@@ -158,13 +159,17 @@ class CnnGenome:
             # No negative filter sizes
             input_width, input_height, input_depth = input_layer.output_shape
             output_width, output_height, output_depth = output_layer.output_shape
-            
             if input_width < output_width or input_height < output_height:
                 return None
             
             logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to layer " + \
                          f"{output_layer.layer_innovation_number}")
-            conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
+            
+            possible_strides: List[int] = get_possible_strides(*input_layer.output_shape, *output_layer.output_shape)
+            
+            stride: int = possible_strides[rng.integers(0, len(possible_strides))]
+            
+            conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), stride, input_layer.layer_innovation_number,
                                     output_layer.layer_innovation_number, self.layer_map)
             self.conv_edges.append(conv_edge)
             edge = cast(Edge, conv_edge)
@@ -198,7 +203,7 @@ class CnnGenome:
             input_layer = self.layer_map[input_layer_in]
             output_layer = self.layer_map[output_layer_in]
             
-            edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer)
+            edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer, rng)
 
             if edge:
                 return True
@@ -282,8 +287,8 @@ class CnnGenome:
                 layer: Layer = cast(Layer, maybe_layer)
 
                 # Assertions here because these should not fail
-                assert self.try_make_new_edge(input_layer, layer)
-                assert self.try_make_new_edge(layer, output_layer)
+                assert self.try_make_new_edge(input_layer, layer, rng)
+                assert self.try_make_new_edge(layer, output_layer, rng)
 
                 return True
 
