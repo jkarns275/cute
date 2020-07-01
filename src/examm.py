@@ -13,28 +13,6 @@ from fitness_log import FitnessLog
 
 class EXAMM:
     
-    ## When performing crossover, what proportion of the time nodes and edges from the more fit parent should 
-    # be put in the resulting child genome.
-    more_fit_crossover_rate: float  = 1.0
-
-    ## When performing crossover, what proportion of the time nodes and edges from the less fit parent should
-    # be put in the resulting child genome.
-    less_fit_crossover_rate: float  = 0.50
-
-    # So these rates aren't quite proportions: the sum of them is the denominator, and the proportion
-    # is the fraction of a given rate and that sum.
-
-    ## How often the add edge mutation should be performed
-    add_edge_rate: float            = 1.0
-    ## How often the enable edge mutation should be performed
-    enable_edge_rate: float         = 1.0
-    ## How often the disable edge mutation should be performed
-    disable_edge_rate: float        = 1.0
-    ## How often the split edge mutation should be performed
-    split_edge_rate: float          = 1.0
-    ## How often the clone mutation should be performed
-    clone_rate: float               = 1.0
-   
 
     def __init__(self, program_arguments: ProgramArguments):
         self.population_size: int = program_arguments.args.population_size
@@ -56,6 +34,7 @@ class EXAMM:
                                     self.mutation_rate, self.intra_island_co_rate, self.inter_island_co_rate)
 
         self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
+        _warmup = self.rng.random(1000)
 
 
     def generate_initial_genome(self):
@@ -70,7 +49,7 @@ class EXAMM:
         edge_2: DenseEdge = DenseEdge(Edge.get_next_edge_innovation_number(), hidden_layer.layer_innovation_number,
                                         output_layer.layer_innovation_number, layer_map)
         
-        genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2])
+        genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set())
        
         logging.info("performing some tests of CnnGenome::path_exists")
 
@@ -100,7 +79,7 @@ class EXAMM:
         genome: CnnGenome = self.speciation_strategy.generate_genome(self)
         
         while True:
-            choice = self.rng.integers(0, 4)
+            choice = self.rng.integers(0, 5)
 
             if choice == 0:
                 if genome.add_edge_mut(self.rng):

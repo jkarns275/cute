@@ -39,7 +39,15 @@ class OutputLayer(Layer):
         return OutputLayer( self.layer_innovation_number, self.dense_layers[:-1], self.number_classes, 
                             inputs=self.inputs, outputs=self.outputs)
 
-    
+
+    def set_enabled(self, enabled: bool):
+        self.enabled = True
+
+
+    def get_enabled(self):
+        return True
+
+
     def get_first_layer_size(self):
         return self.dense_layers[0]
 

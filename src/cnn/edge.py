@@ -37,6 +37,10 @@ class Edge:
         layer_map[output_layer_in].add_input_edge(self)
         layer_map[input_layer_in].add_output_edge(self)
 
+    
+    def copy(self, layer_map: Dict[int, 'Layer']) -> 'Edge':
+        raise NotImplementedError("call to abstract method Edge::copy")
+
 
     def __getstate__(self):
         # Prevent the tensorflow layer from being pickled
@@ -49,6 +53,10 @@ class Edge:
         # Not sure if this is necessary but just make  
         self.__dict__.update(state)
         self.tf_layer = None
+    
+
+    def set_enabled(self, enabled: bool):
+        self.enabled = enabled
 
     
     def is_enabled(self):

@@ -53,7 +53,21 @@ def make_edge_map(edges: List['Edge']):
 def get_possible_strides(   input_width: int, input_height: int, _input_depth: int,
                             output_width: int, output_height: int, _output_depth: int) -> List[int]:
     assert input_width == input_height
-    # I think this is the correct calculation...
-    max_stride = max(-input_width // (1 - output_width) - 1, 1)
+    
+    max_stride = -input_width // (1 - output_width)
+    
+    # I don't know why this is necessary.
+    if input_width % (output_width - 1) == 0:
+        max_stride -= 1
+
+    empirical_strides = []
+    for stride in range(1, max_stride + 5):
+        fw, fh = calculate_required_filter_size(stride, input_width, input_height, _input_depth, output_width, output_height, _output_depth)
+        if fw > 0:
+            empirical_strides.append(stride)
+        else:
+            break
+
+    assert empirical_strides == list(range(1, max_stride + 1))
 
     return list(range(1, max_stride + 1))

@@ -1,6 +1,6 @@
 import logging
 from typing import List, Dict, Any, Optional, Tuple, Set, Iterator, cast
-from itertools import product
+from itertools import product, chain
 
 from tensorflow import keras
 import numpy as np
@@ -19,10 +19,102 @@ import hp
 class CnnGenome:
 
 
+    @staticmethod
+    def try_crossover(rng: np.random.Generator, *parents_tuple: 'CnnGenome') -> Optional['CnnGenome']:
+        """
+        Attempts to perform crossover. This could fail in the event that the resulting child genome has no path
+        from the input layer to the output layer. This won't happen if the parent genome's accept_rate is 1.0
+        """
+        parents: List['CnnGenome'] = list(parents_tuple)
+        assert len(parents) > 1
+
+        def sort_key(genome: 'CnnGenome') -> float:
+            return genome.fitness
+
+        parents = list(sorted(parents, key=sort_key))
+
+        layer_map: Dict[int, Layer] = {}
+        edge_map: Dict[int, Edge] = {}
+        epigenetic_weights: Dict[str, Any] = {}
+        disabled_edges: Set[int] = set()
+        disabled_layers: Set[int] = set()
+
+        def try_add_layer(layer: Layer, enabled: bool=True):
+            """
+            Add a copy of the supplied layer to the layer map of the new genome we are constructing,
+            enabling or disabling it based on the value of enabled
+            """
+            if layer.layer_innovation_number not in layer_map:
+                copy = layer.copy()
+                copy.clear_io()
+                copy.set_enabled(enabled)
+                layer_map[layer.layer_innovation_number] = copy
+                if not enabled:
+                    disabled_layers.add(layer.layer_innovation_number)
+       
+
+        def try_add_edge(edge: Edge, enabled: bool=True):
+            """
+            Add a copy of the supplied edge to the edge map, enabling or disabling it based on the value
+            of enabled
+            """
+            if  edge.edge_innovation_number not in edge_map and \
+                edge.input_layer_in in layer_map and \
+                edge.output_layer_in in layer_map:
+                copy = edge.copy(layer_map)
+                copy.set_enabled(enabled)
+                edge_map[edge.edge_innovation_number] = copy
+                if not enabled:
+                    disabled_edges.add(edge.edge_innovation_number)
+
+
+        for i, parent in enumerate(parents):
+            accept_rate = hp.get_crossover_accept_rate(i)
+
+            for layer in parent.layer_map.values():
+                sample = rng.random()
+                try_add_layer(layer, sample <= accept_rate)
+
+            for edge in parent.edge_map.values():
+                sample = rng.random()
+                try_add_edge(edge, sample <= accept_rate)
+
+            # We will get the "best" weights here because we sorted by genome fitness - the first things added
+            # will have the best fitness
+            for name, weights in parent.epigenetic_weights.items():
+                if name not in epigenetic_weights:
+                    epigenetic_weights[name] = weights
+
+        conv_edges: List[ConvEdge] = []
+        output_edges: List[DenseEdge] = []
+        for edge in edge_map.values():
+            ty = type(edge)
+            if ty == ConvEdge:
+                conv_edges.append(cast(ConvEdge, edge))
+            elif ty == DenseEdge:
+                output_edges.append(cast(DenseEdge, edge))
+            else:
+                raise RuntimeError(f"unrecognized edge type '{ty}'")
+
+        number_outputs: int = parents[0].number_outputs
+        input_layer: InputLayer = cast(InputLayer, layer_map[parents[0].input_layer.layer_innovation_number])
+        output_layer: OutputLayer = cast(OutputLayer, layer_map[parents[0].output_layer.layer_innovation_number])
+         
+        # For now use default fitness, history, and accuracy
+        # Maybe we'll want to use the ones from the parent genome
+        child = CnnGenome(  number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
+                            epigenetic_weights, disabled_layers, disabled_edges)
+
+        if child.path_exists(child.input_layer, child.output_layer, include_disabled=False):
+            return child
+        else:
+            return None
+                
+
     def __init__(self,  number_outputs: int, input_layer: InputLayer, output_layer: OutputLayer,
                         layer_map: Dict[int, Layer], conv_edges: List[ConvEdge], output_edges: List[DenseEdge],
-                        epigenetic_weights: Dict[str, Any]={}, disabled_edges: Set[int]=set(), fitness: float=float('inf'),
-                        history: Optional[Any]=None, accuracy: float=-0.0):
+                        epigenetic_weights: Dict[str, Any], disabled_layers: Set[int], disabled_edges: Set[int], 
+                        fitness: float=float('inf'), history: Optional[Any]=None, accuracy: float=-0.0):
         # When this object is serialized the input and output layer in this map are copied so we need to make sure
         # we use the same object, otherwise layer_map[input_layer.layer_innovation_number] and input_layer will be
         # equal but different objects.
@@ -45,17 +137,18 @@ class CnnGenome:
         self.input_layer: InputLayer = input_layer
         self.output_layer: OutputLayer = output_layer
         self.layer_map: Dict[int, Layer] = layer_map
-        self.disabled_edges: Set[int] = disabled_edges.copy()
+        self.disabled_layers: Set[int] = disabled_layers
+        self.disabled_edges: Set[int] = disabled_edges
 
         self.fitness: float = fitness
         self.accuracy: float = accuracy 
-        self.history: Optional[Any] = history.copy() if history else None
+        self.history: Optional[Any] = history
 
         # Not sure what type the weights will be
-        self.epigenetic_weights: Dict[str, Any] = epigenetic_weights.copy()
+        self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
   
         self.island: int = -1
-
+        
 
     def copy(self) -> 'CnnGenome':        
         layer_map = {}
@@ -78,10 +171,11 @@ class CnnGenome:
         
         output_layer: OutputLayer = cast(OutputLayer, layer_map[self.output_layer.layer_innovation_number])
         assert type(output_layer) == OutputLayer
-
-        return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
-                            epigenetic_weights=self.epigenetic_weights, disabled_edges=self.disabled_edges,
-                            fitness=self.fitness, accuracy=self.accuracy, history=self.history)
+        
+        # TODO: might be able to remove some of these copies
+        return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges.copy(), output_edges.copy(),
+                            epigenetic_weights=self.epigenetic_weights.copy(), disabled_layers=self.disabled_layers.copy(), 
+                            disabled_edges=self.disabled_edges.copy(), fitness=self.fitness, accuracy=self.accuracy, history=self.history)
 
 
     def path_exists(self, src: Layer, dst: Layer, include_disabled=True) -> bool:
@@ -100,19 +194,19 @@ class CnnGenome:
             next_edge_in = edges_to_visit.pop()
             next_edge: Edge = self.edge_map[next_edge_in]
             
-            
             if not include_disabled and next_edge_in in self.disabled_edges:
                 continue
             
-
             if next_edge.output_layer_in in visited:
                 continue
             
             layer: Layer = self.layer_map[next_edge.output_layer_in]
             
+            if not layer.get_enabled():
+                continue
+
             if layer.layer_innovation_number == dst.layer_innovation_number:
                 return True
-
 
             for edge_in in layer.outputs:
                 if include_disabled or edge_in not in self.disabled_edges:
@@ -179,7 +273,7 @@ class CnnGenome:
         return edge
     
 
-    def get_random_layer_pair_iterator(self, rng: np.random.Generator) -> Iterator[Tuple[Layer, Layer]]:
+    def get_random_layer_pair_iterator(self, rng: np.random.Generator) -> Iterator[Tuple[int, int]]:
         input_layer_ins = list(self.layer_map.keys())
         output_layer_ins = input_layer_ins.copy()
 
@@ -319,20 +413,19 @@ class CnnGenome:
 
         disabled_edges: List[int] = list(self.disabled_edges)
         index: int = rng.integers(0, len(disabled_edges))
-        edge_in: int = disabled_edge[index]
+        edge_in: int = disabled_edges[index]
 
-        self.set_edge_enabled(edge_in, True)
-        self.disabled_edges.remove(edge_in)
+        self.enable_edge(edge_in)
 
         return True
 
     
-    def get_random_edge_iterator(self, rng: np.random.Generator) -> bool:
+    def get_random_edge_iterator(self, rng: np.random.Generator) -> Iterator[int]:
         get_in = lambda edge: edge.edge_innovation_number
         all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
         rng.shuffle(all_edges)
 
-        return all_edges
+        return cast(Iterator[int], all_edges)
     
     
     def disable_edge_mut(self, rng: np.random.Generator) -> bool:
@@ -397,7 +490,7 @@ class CnnGenome:
         accuracy = history.history['val_categorical_accuracy'][-1]
 
         # set the fitness
-        self.fitness = fitness
+        self.fitness = fitness + hp.PARAMETER_COUNT_PENALTY_WEIGHT * model.count_params()
         self.accuracy = accuracy
         self.history = history.history
 

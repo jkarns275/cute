@@ -21,8 +21,10 @@ class Layer:
 
 
     def __init__(self,  layer_innovation_number: int, width: int, height: int, depth: int,
-                        inputs: Set[int]=set(), outputs: Set[int]=set()):
+                        inputs: Set[int]=set(), outputs: Set[int]=set(), enabled: bool=True):
         self.layer_innovation_number: int = layer_innovation_number
+
+        self.enabled = enabled
         
         self.width: int = width
         self.height: int = height
@@ -56,9 +58,25 @@ class Layer:
                         inputs=self.inputs, outputs=self.outputs)
 
 
+    def set_enabled(self, enabled: bool):
+        self.enabled = enabled
+    
+
+    def get_enabled(self):
+        return self.enabled
+
+
+    def clear_io(self):
+        self.inputs = set()
+        self.outputs = set()
+
+
     def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[keras.layers.Layer]:
         if self.tf_layer is not None:
             return self.tf_layer
+        
+        if not self.enabled:
+            return None
 
         maybe_input_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
         input_layers: List[tf.Tensor] = [x for x in maybe_input_layers if x is not None]

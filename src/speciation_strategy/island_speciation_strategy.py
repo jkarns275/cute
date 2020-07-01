@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 
 from speciation_strategy import SpeciationStrategy
 from cnn import CnnGenome
@@ -33,7 +33,7 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         assert 0.9999 < mutation_rate + inter_island_crossover_rate + intra_island_crossover_rate < 1.00001
         
 
-    def try_insert_genome(self, genome: CnnGenome) -> str:
+    def try_insert_genome(self, genome: CnnGenome) -> Optional[str]:
         """
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return "inserted", otherwise it will return None
