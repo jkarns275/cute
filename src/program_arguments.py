@@ -1,4 +1,7 @@
+import os
 import argparse
+
+import tensorflow as tf
 
 from dataset import Dataset
 from hp import set_dataset
@@ -29,11 +32,14 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=1000, type=int, help='the number of genomes to generate and evaluate')
         self.add_argument('-bpi', '--backprop_iterations', metavar='backprop_iterations', action='store',
                 default=1, type=int, help='the number of iterations of backpropagation to be applied to generated genomes to evaluate them')
+        self.add_argument('-ig', '--ignore_gpus', metavar='ignore_gpus', action='store',
+                default=0, type=int, help='whether or not to ignore gpus. if set cpus will be used instead')
 
         self.args = self.parse_args()
 
         self.set_dataset()
         self.set_number_epochs()
+        self.set_ignore_gpus()
 
 
     def set_number_epochs(self):
@@ -45,3 +51,9 @@ class ProgramArguments(argparse.ArgumentParser):
 
         dataset = Dataset.dataset_from_arguments(self)
         set_dataset(dataset)
+
+
+    def set_ignore_gpus(self):
+        if self.args.ignore_gpus:
+            os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+            tf.config.experimental.set_visible_devices([], 'GPU')

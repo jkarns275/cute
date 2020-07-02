@@ -25,13 +25,13 @@ def gpu_fix():
             for gpu in gpus:
                 tf.config.experimental.set_memory_growth(gpu, True)
             logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            logging.info(f"found {len(gpus)} gpus, and {len(logical_gpus)} physical GPUs")
         except RuntimeError as e:
             # Memory growth must be set before GPUs have been initialized
             print(e)
 
 
 def graph_genome_main(args: List[str]):
+    gpu_fix()
     
     genome_path = args[2]
     image_dst = args[3]
@@ -54,6 +54,7 @@ def graph_genome_main(args: List[str]):
 
 
 def train_genome_main(args: List[str]):
+    gpu_fix()
     hp.set_dataset(Dataset.make_mnist_dataset())
     genome_path = args[2]
     
@@ -69,6 +70,8 @@ def evo_main():
     logging.basicConfig(level=logging.DEBUG, format=f'[%(asctime)s][rank {rank}] %(message)s')
     
     pa = ProgramArguments()
+    
+    gpu_fix()
 
     if rank == 0:
         max_rank: int = comm.Get_size()
@@ -83,8 +86,6 @@ def evo_main():
 
 if __name__ == "__main__":
     logging.getLogger().setLevel(logging.DEBUG)
-
-    gpu_fix()
 
     if sys.argv[1] == "graph_genome":
         graph_genome_main(sys.argv)
