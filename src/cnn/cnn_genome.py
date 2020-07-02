@@ -27,17 +27,23 @@ class CnnGenome:
         """
         parents: List['CnnGenome'] = list(parents_tuple)
         assert len(parents) > 1
-
+        
         def sort_key(genome: 'CnnGenome') -> float:
             return genome.fitness
 
         parents = list(sorted(parents, key=sort_key))
+
+        logging.info(f"attempting crossover with {len(parents)} parents")
+        for i, parent in enumerate(parents):
+            logging.info(   f"parent {i} has {parent.number_enabled_edges()} enabled edges and " + \
+                            f"{parent.number_enabled_layers()} enabled layers")
 
         layer_map: Dict[int, Layer] = {}
         edge_map: Dict[int, Edge] = {}
         epigenetic_weights: Dict[str, Any] = {}
         disabled_edges: Set[int] = set()
         disabled_layers: Set[int] = set()
+
 
         def try_add_layer(layer: Layer, enabled: bool=True):
             """
@@ -106,8 +112,12 @@ class CnnGenome:
                             epigenetic_weights, disabled_layers, disabled_edges)
 
         if child.path_exists(child.input_layer, child.output_layer, include_disabled=False):
+            logging.info("crossover succeeded!")
+            logging.info(  f"child has {child.number_enabled_edges()} enabled edges and " + \
+                            f"{child.number_enabled_layers()} enabled layers")
             return child
         else:
+            logging.info("crossover failed because there was no path from the input layer to the output layer")
             return None
                 
 
@@ -202,7 +212,7 @@ class CnnGenome:
             
             layer: Layer = self.layer_map[next_edge.output_layer_in]
             
-            if not layer.get_enabled():
+            if not layer.is_enabled():
                 continue
 
             if layer.layer_innovation_number == dst.layer_innovation_number:
@@ -271,38 +281,6 @@ class CnnGenome:
         self.edge_map[edge.edge_innovation_number] = cast(Edge, edge)
 
         return edge
-    
-
-    def get_random_layer_pair_iterator(self, rng: np.random.Generator) -> Iterator[Tuple[int, int]]:
-        input_layer_ins = list(self.layer_map.keys())
-        output_layer_ins = input_layer_ins.copy()
-
-        rng.shuffle(input_layer_ins)
-        rng.shuffle(output_layer_ins)
-
-        # Try every combination until we find one that works, or we exhaust all combinations.
-        return product(input_layer_ins, output_layer_ins)
-
-
-    def add_edge_mut(self, rng: np.random.Generator) -> bool:
-        """
-        This performs an add edge mutation by randomly selecting two layers and trying to create an edge
-        between them. If an edge cannot be created, two different layers will be selected. 
-        This process will be repeated until an edge is successfully created.
-        """
-        logging.info("attempting add_edge mutation")
-
-        # Try every combination until we find one that works, or we exhaust all combinations.
-        for input_layer_in, output_layer_in in self.get_random_layer_pair_iterator(rng):
-            input_layer = self.layer_map[input_layer_in]
-            output_layer = self.layer_map[output_layer_in]
-            
-            edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer, rng)
-
-            if edge:
-                return True
-
-        return False
 
 
     def try_make_new_layer(self, upper_bound_layer: Layer, lower_bound_layer: Layer, rng: np.random.Generator) -> Optional[Layer]:
@@ -350,7 +328,82 @@ class CnnGenome:
         
         return layer
 
-    
+
+    def random_layer_iterator(self, rng: np.random.Generator) -> Iterator[int]:
+        layer_ins = list(self.layer_map.keys())
+
+        rng.shuffle(layer_ins)
+        
+        return cast(Iterator[int], layer_ins)
+
+ 
+    def random_layer_pair_iterator(self, rng: np.random.Generator) -> Iterator[Tuple[int, int]]:
+        return product(self.random_layer_iterator(rng), self.random_layer_iterator(rng))
+
+
+    def random_edge_iterator(self, rng: np.random.Generator) -> Iterator[int]:
+        get_in = lambda edge: edge.edge_innovation_number
+        all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
+        rng.shuffle(all_edges)
+
+        return cast(Iterator[int], all_edges)
+ 
+
+    def enable_edge(self, edge_in: int):
+        if edge_in not in self.disabled_edges:
+            logging.info(f"attempted to enable edge {edge_in} that was already enabled")
+
+        self.disabled_edges.remove(edge_in)
+        self.edge_map[edge_in].enable()
+
+
+    def disable_edge(self, edge_in: int):
+        if edge_in in self.disabled_edges:
+            logging.info(f"attempted to disable {edge_in} that was already disabled")
+
+        self.disabled_edges.add(edge_in)
+        self.edge_map[edge_in].disable()
+
+
+    def enable_layer(self, layer_in: int):
+        if layer_in not in self.disabled_layers:
+            logging.info(f"attempted to enable {layer_in} that was already enabled")
+
+        self.disabled_layers.remove(layer_in)
+        self.layer_map[layer_in].enable()
+
+
+    def disable_layer(self, layer_in: int):
+        if layer_in in self.disabled_layers:
+            logging.info(f"attempted to disable {layer_in} that was already disabled")
+
+        self.disabled_layers.add(layer_in)
+        self.layer_map[layer_in].disable()
+
+
+    def add_edge_mut(self, rng: np.random.Generator) -> bool:
+        """
+        This performs an add edge mutation by randomly selecting two layers and trying to create an edge
+        between them. If an edge cannot be created, two different layers will be selected. 
+        This process will be repeated until an edge is successfully created.
+        """
+        logging.info("attempting add_edge mutation")
+
+        # Try every combination until we find one that works, or we exhaust all combinations.
+        for input_layer_in, output_layer_in in self.random_layer_pair_iterator(rng):
+            input_layer = self.layer_map[input_layer_in]
+            output_layer = self.layer_map[output_layer_in]
+            
+            edge: Optional[Edge] = self.try_make_new_edge(input_layer, output_layer, rng)
+
+            if edge:
+                logging.info("successfully completed add_edge mutation")
+                return True
+        
+        logging.info("failed to complete add_edge mutation")
+        return False
+
+   
     def add_layer_mut(self, rng: np.random.Generator):
         """
         This performs an add layer mutation by selecting two random layers and creating a layer that connects
@@ -360,7 +413,7 @@ class CnnGenome:
         """
         logging.info("attempting add_layer mutation")
         
-        for input_layer_in, output_layer_in in self.get_random_layer_pair_iterator(rng):
+        for input_layer_in, output_layer_in in self.random_layer_pair_iterator(rng):
             input_layer = self.layer_map[input_layer_in]
             output_layer = self.layer_map[output_layer_in]
             
@@ -384,31 +437,18 @@ class CnnGenome:
                 assert self.try_make_new_edge(input_layer, layer, rng)
                 assert self.try_make_new_edge(layer, output_layer, rng)
 
+                logging.info("successfully completed add_layer mutation")
                 return True
-
+        
+        logging.info("failed to complete add_layer mutation")
         return False
     
     
-    def enable_edge(self, edge_in: int):
-        if edge_in not in self.disabled_edges:
-            logging.info(f"attempted to enable edge {edge_in} that was already enabled")
-
-        self.disabled_edges.remove(edge_in)
-        self.edge_map[edge_in].enable()
-
-
-    def disable_edge(self, edge_in: int):
-        if edge_in in self.disabled_edges:
-            logging.info(f"attempted to disable {edge_in} that was already disabled")
-
-        self.disabled_edges.add(edge_in)
-        self.edge_map[edge_in].disable()
-
-
     def enable_edge_mut(self, rng: np.random.Generator) -> bool:
         logging.info("attempting enable_edge mutation")
         
         if not self.disabled_edges:
+            logging.info("failed to complete enable_edge mutation")
             return False
 
         disabled_edges: List[int] = list(self.disabled_edges)
@@ -417,32 +457,91 @@ class CnnGenome:
 
         self.enable_edge(edge_in)
 
+        logging.info("successfully completed enable_edge mutation")
         return True
 
-    
-    def get_random_edge_iterator(self, rng: np.random.Generator) -> Iterator[int]:
-        get_in = lambda edge: edge.edge_innovation_number
-        all_edges: List[int] = list(map(get_in, self.conv_edges)) + list(map(get_in, self.output_edges))
-        rng.shuffle(all_edges)
-
-        return cast(Iterator[int], all_edges)
-    
-    
+       
     def disable_edge_mut(self, rng: np.random.Generator) -> bool:
         logging.info("attempting disable_edge mutation")
         
         # We will attempt to disable edges until we succeed or we tried every edge.
-        for edge_in in self.get_random_edge_iterator(rng):
+        for edge_in in self.random_edge_iterator(rng):
+            if edge_in in self.disabled_edges:
+                continue
+
             self.disable_edge(edge_in)
 
             if self.path_exists(self.input_layer, self.output_layer, False):
                 edge = self.edge_map[edge_in]
-                logging.info(f"disabling edge {edge} from {edge.input_layer_in} to {edge.output_layer_in}")
+                logging.info(f"disabling edge from {edge.input_layer_in} to {edge.output_layer_in}")
+                logging.info("successfully completed disable_edge mutation")
                 return True
 
             self.enable_edge(edge_in)
-
+        
+        logging.info("failed to complete disable_edge mutation")
         return False
+   
+
+    def disable_layer_mut(self, rng: np.random.Generator) -> bool:
+        logging.info("attempting disable_layer mutation")
+        
+        layers_to_ignore = {self.input_layer.layer_innovation_number, self.output_layer.layer_innovation_number}
+        for layer_in in self.random_layer_iterator(rng):
+            if layer_in in self.disabled_layers or layer_in in layers_to_ignore:
+                continue
+
+            self.disable_layer(layer_in)
+
+            if self.path_exists(self.input_layer, self.output_layer, False):
+                logging.info(f"disabling layer {layer_in}")
+                logging.info("successfully completed disable_layer mutation")
+                return True
+
+            self.enable_layer(layer_in)
+        
+        logging.info("failed to complete disable_layer mutation")
+        return False
+    
+
+    def enable_layer_mut(self, rng: np.random.Generator) -> bool:
+        logging.info("attempting enable_layer mutation")
+
+        if not self.disabled_layers:
+            logging.info("failed to complete enable_layer mutation")
+            return False
+
+        disabled_layers = list(self.disabled_layers)
+        index: int = rng.integers(0, len(disabled_layers))
+        layer_in: int = disabled_layers[index]
+
+        self.enable_layer(layer_in)
+        
+        logging.info(f"enabling layer {layer_in}")
+        logging.info("successfully completed enable_layer mutation")
+        return True
+
+
+    def copy_mut(self, _rng: np.random.Generator):
+        logging.info("successfully completed copy mutation")
+        return True
+
+
+    def number_enabled_layers(self):
+        n = 0
+        for i, layer in self.layer_map.items():
+            if layer.is_enabled():
+                n += 1
+        return n
+
+    
+    def number_enabled_edges(self):
+        n = 0
+        for i, layer in self.edge_map.items():
+            if layer.is_enabled():
+                n += 1
+        return n
+
 
     def create_model(self):
         input_layer = self.input_layer.get_tf_layer(self.layer_map, self.edge_map)

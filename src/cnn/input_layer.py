@@ -21,9 +21,14 @@ class InputLayer(Layer):
 
     def copy(self) -> 'InputLayer':
         return InputLayer(self.layer_innovation_number, self.width, self.height, self.number_channels)
+    
+
+    
 
 
     def set_enabled(self, enabled: bool):
+        if not enabled:
+            raise RuntimeError("cannot set the input layer to be disabled")
         self.enabled = True
 
 
@@ -32,7 +37,7 @@ class InputLayer(Layer):
 
 
     def add_input(self, input_layer: keras.layers.Layer):
-        raise RuntimeError("You cannot add an input to the input layer!")
+        raise RuntimeError("you cannot add an input to the input layer!")
 
 
     def get_tf_layer(self, layer_map: Dict[int, Layer], edge_map: Dict[int, Edge]) -> keras.layers.Layer:

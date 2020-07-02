@@ -1,5 +1,7 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
+
+import numpy as np
 
 from speciation_strategy import SpeciationStrategy
 from cnn import CnnGenome
@@ -7,10 +9,11 @@ from speciation_strategy.island import Island
 if False:
     from examm import EXAMM
 
+
 class IslandSpeciationStrategy(SpeciationStrategy):
 
-    def __init__(self, initial_genome: CnnGenome, number_islands: int, population_size: int,
-                mutation_rate: float, inter_island_crossover_rate: float, intra_island_crossover_rate: float):
+
+    def __init__(self, initial_genome: CnnGenome, number_islands: int, population_size: int):
         super().__init__()
 
         self.population_size = population_size
@@ -22,16 +25,9 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         self.global_best_genome = initial_genome
         self.global_worst_genome = initial_genome
 
-        self.mutation_rate: float = mutation_rate
-        self.inter_island_crossover_rate: float = inter_island_crossover_rate
-        self.intra_island_crossover_rate: float = intra_island_crossover_rate
-
         # We need to rotate through islands 0 through n - 1, this is the counter we'll use
         self.island_turn: int = 0
 
-        # Make sure these rates sum to 1.0
-        assert 0.9999 < mutation_rate + inter_island_crossover_rate + intra_island_crossover_rate < 1.00001
-        
 
     def try_insert_genome(self, genome: CnnGenome) -> Optional[str]:
         """
@@ -104,7 +100,29 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         return turn
 
 
-    def generate_genome(self, examm: 'EXAMM'):
+    def try_get_inter_island_crossover_parents(self, rng: np.random.Generator) -> Optional[Tuple[CnnGenome]]:
+        return None
+    
+
+    def try_get_intra_island_crossover_parents(self, rng: np.random.Generator) -> Optional[Tuple[CnnGenome, ...]]:
+        island_turn = self.next_island_turn()
+
+        if len(self.islands[island_turn].population) < 2:
+            return None
+        else:
+            population: List[CnnGenome] = self.islands[island_turn].population
+            i0 = rng.integers(0, len(population))
+            i1 = rng.integers(0, len(population) - 1)
+            
+            if i1 == i0:
+                i1 += 1
+            
+            assert i1 != i0
+
+            return (population[i0], population[i1])
+
+
+    def generate_genome(self, rng: np.random.Generator):
         self.generated_genomes += 1
         island_turn = self.next_island_turn()
         
@@ -118,7 +136,7 @@ class IslandSpeciationStrategy(SpeciationStrategy):
             if self.islands[island_turn].is_empty():
                 genome = self.initial_genome
             else:
-                genome = self.islands[island_turn].get_random_genome(examm.rng)
+                genome = self.islands[island_turn].get_random_genome(rng)
                 
             genome.island = island_turn
             

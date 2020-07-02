@@ -9,7 +9,7 @@ from program_arguments import ProgramArguments
 from speciation_strategy import SpeciationStrategy
 from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
 from fitness_log import FitnessLog
-
+import hp
 
 class EXAMM:
     
@@ -24,14 +24,26 @@ class EXAMM:
         self.fitness_log: FitnessLog = FitnessLog(self.output_directory)
 
         initial_genome: CnnGenome = self.generate_initial_genome()
-
-        self.mutation_rate: float = 0.7
-        self.intra_island_co_rate: float = 0.2
-        self.inter_island_co_rate: float = 0.1
-
+ 
         self.speciation_strategy: SpeciationStrategy = \
-            IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size,
-                                    self.mutation_rate, self.intra_island_co_rate, self.inter_island_co_rate)
+            IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size)
+
+        self.mutation_function_probability_map = {
+                CnnGenome.add_edge_mut: hp.add_edge_probability,
+                CnnGenome.add_layer_mut: hp.add_layer_probability,
+                CnnGenome.disable_edge_mut: hp.disable_edge_probability,
+                CnnGenome.enable_edge_mut: hp.enable_edge_probability,
+                CnnGenome.disable_layer_mut: hp.disable_layer_probability,
+                CnnGenome.enable_layer_mut: hp.enable_layer_probability,
+                CnnGenome.copy_mut: hp.copy_probability
+            }
+        
+        self.mutation_functions = []
+        self.mutation_probabilities = []
+
+        for mutation_function, probability in self.mutation_function_probability_map.items():
+            self.mutation_functions.append(mutation_function)
+            self.mutation_probabilities.append(probability)
 
         self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
         _warmup = self.rng.random(1000)
@@ -58,7 +70,6 @@ class EXAMM:
         assert not genome.path_exists(output_layer, input_layer)
         assert not genome.path_exists(hidden_layer, input_layer)
 
-
         return genome
 
 
@@ -74,32 +85,36 @@ class EXAMM:
     def generate_genome(self):
         if self.get_generated_genomes() >= self.max_genomes:
             return None
-
-        # Grab genome from speciation strategy
-        genome: CnnGenome = self.speciation_strategy.generate_genome(self)
         
-        while True:
-            choice = self.rng.integers(0, 5)
+        if self.rng.random() < hp.co_rate:
+            # Intra island crossover
+            # if self.rng.random() * hp.co_rate < hp.intra_island_co_rate:
+            parents = self.speciation_strategy.try_get_intra_island_crossover_parents(self.rng)
+            if not parents:
+                return self.generate_genome()
 
-            if choice == 0:
-                if genome.add_edge_mut(self.rng):
-                    break
-            elif choice == 1:
-                if genome.add_layer_mut(self.rng):
-                    break
-            elif choice == 2:
-                # clone
-                break
-            elif choice == 3:
-                if genome.disable_edge_mut(self.rng):
-                    break
-            elif choice == 4:
-                if genome.enable_edge_mut(self.rng):
-                    break
+            child: Optional[CnnGenome] = CnnGenome.try_crossover(self.rng, *parents)
+            
+            if child:
+                return child
             else:
-                assert False
+                return self.generate_genome()
 
-        return genome
+            # Inter island crossover
+            # else:
+                # parents = self.speciation_strategy.try_get_inter_island_crossover_parents()
+        else:
+            # Grab genome from speciation strategy
+            genome: CnnGenome = self.speciation_strategy.generate_genome(self.rng)
+            
+            # Keep trying random mutations until one succeeds
+            while True:
+                mutation_function = self.rng.choice(self.mutation_functions, 1, p=self.mutation_probabilities)[0]
+
+                if mutation_function(genome, self.rng):
+                    break
+
+            return genome
     
 
     def try_insert_genome(self, genome: CnnGenome):

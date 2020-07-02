@@ -13,28 +13,28 @@ class SpeciationStrategy:
         Attempts to insert the supplied genome.
         If the genome is inserted, this method will return True, otherwise it will return False.
         """
-        raise Exception("Called abstract insert_genome method")
+        raise Exception("called abstract insert_genome method")
 
 
     def get_best_fitness(self):
-        raise Exception("Called abstract get_best_fitness")
+        raise Exception("called abstract get_best_fitness")
 
 
     def get_worst_fitness(self):
-        raise Exception("Called abstact get_worst_fitness")
+        raise Exception("called abstact get_worst_fitness")
 
 
     def get_generated_genomes(self):
-        raise Exception("Called abstract get_generated_genomes")
+        raise Exception("called abstract get_generated_genomes")
 
 
     def get_inserted_genomes(self):
-        raise Exception("Called abstract get_inserted_genomes")
+        raise Exception("called abstract get_inserted_genomes")
 
 
     def get_best_genome(self):
-        raise Exception("Called abstract get_best_genome")
+        raise Exception("called abstract get_best_genome")
 
 
     def generate_genome(self, examm: 'EXAMM'):
-        raise Exception("Called abstract generate_genome")
+        raise Exception("called abstract generate_genome")

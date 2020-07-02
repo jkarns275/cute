@@ -57,9 +57,9 @@ class Edge:
 
     def set_enabled(self, enabled: bool):
         self.enabled = enabled
-
     
-    def is_enabled(self):
+    
+    def is_enabled(self) -> bool:
         return self.enabled
 
 

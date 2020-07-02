@@ -59,11 +59,19 @@ def get_dataset():
 
 def get_crossover_accept_rate(n: int):
     """
+    this is assuming 0 index
     for the nth worst parent, calculate the proportion of time nodes and edges should be accepted
     from that genome during crossover
     """
-    return 1 / n
+    return 1 / (n + 1)
 
+
+# How often to perform crossover
+intra_island_co_rate: float = 0.2
+inter_island_co_rate: float = 0.05
+co_rate: float = intra_island_co_rate + inter_island_co_rate
+
+mutation_rate: float = 1 - co_rate
 
 ## When performing crossover, what proportion of the time nodes and edges from the more fit parent should 
 # be put in the resulting child genome.
@@ -88,20 +96,24 @@ disable_edge_rate: float        = 1.0
 ## How often the split edge mutation should be performed
 split_edge_rate: float          = 1.0
 
-## How often the clone mutation should be performed
-clone_rate: float               = 1.0
+## How often the copy mutation should be performed
+copy_rate: float               = 1.0
 
 ## How often the add layer mutation should be performed
-add_layer_rate: float                = 1.0
+add_layer_rate: float           = 1.0
 
-rate_sum: float = add_edge_rate + enable_edge_rate + disable_edge_rate + clone_rate + add_layer_rate
+## How often the enable layer mutation should be performed
+enable_layer_rate: float        = 1.0
 
-mutation_rates: Dict[str, float] = {
-    'add_edge': add_edge_rate / rate_sum,
-    'enable_edge': enable_edge_rate / rate_sum,
-    'disable_edge': disable_edge_rate / rate_sum,
-    'add_layer': add_layer_rate / rate_sum,
-    'clone': clone_rate / rate_sum
-}
+## How often the disable layer mutation should be performed
+disable_layer_rate: float       = 1.0
 
-assert 0.9999 < sum(mutation_rates.values()) < 1.0001
+rate_sum: float = add_edge_rate + enable_edge_rate + disable_edge_rate + copy_rate + add_layer_rate + enable_layer_rate + disable_layer_rate
+
+add_edge_probability: float =       add_edge_rate / rate_sum
+enable_edge_probability: float =    enable_edge_rate / rate_sum
+disable_edge_probability: float =   disable_edge_rate / rate_sum
+add_layer_probability: float =      add_layer_rate / rate_sum
+enable_layer_probability: float =   enable_layer_rate / rate_sum
+disable_layer_probability: float = disable_layer_rate / rate_sum
+copy_probability: float =          copy_rate / rate_sum

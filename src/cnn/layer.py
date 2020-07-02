@@ -58,11 +58,22 @@ class Layer:
                         inputs=self.inputs, outputs=self.outputs)
 
 
+    def enable(self):
+        self.set_enabled(True)
+
+    
+    def disable(self):
+        self.set_enabled(False)
+
+
     def set_enabled(self, enabled: bool):
+        """
+        This method is to be overridden, not the enable or disable methods
+        """
         self.enabled = enabled
     
 
-    def get_enabled(self):
+    def is_enabled(self):
         return self.enabled
 
 
