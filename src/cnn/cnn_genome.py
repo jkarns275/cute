@@ -563,8 +563,6 @@ class CnnGenome:
         model: keras.Model = self.create_model()
         logging.info(f"model has {model.count_params()} parameters")
 
-
-
         # set any epigenetic weights
         if self.epigenetic_weights:
             logging.info("inheriting epigenetic weights")

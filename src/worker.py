@@ -55,9 +55,13 @@ class Worker:
 
     def handle_genome(self):
         logging.debug(f"worker {self.rank} handling genome")
-
+        
         genome: CnnGenome = requests.recieve_genome(self.comm, 0)
-        genome.train()
+        
+        try:
+            genome.train()
+        except tf.errors.ResourceExhaustedError as re:
+            logging.error(f"failed to train a genome")
 
         requests.send_genome(self.comm, 0, genome)
 

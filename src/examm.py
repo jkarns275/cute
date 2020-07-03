@@ -28,6 +28,9 @@ class EXAMM:
         self.speciation_strategy: SpeciationStrategy = \
             IslandSpeciationStrategy(initial_genome, self.number_islands, self.population_size)
 
+        # For the initial genome
+        self.speciation_strategy.generated_genomes += 1
+        
         self.mutation_function_probability_map = {
                 CnnGenome.add_edge_mut: hp.add_edge_probability,
                 CnnGenome.add_layer_mut: hp.add_layer_probability,
@@ -51,8 +54,8 @@ class EXAMM:
 
     def generate_initial_genome(self):
         input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), 28, 28, 1)
-        hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 14, 14, 14)
-        output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [64], 10)
+        hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 14, 14, 16)
+        output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [128, 32], 10)
 
         layer_map = make_layer_map([input_layer, hidden_layer, output_layer])
 
@@ -86,19 +89,20 @@ class EXAMM:
         if self.get_generated_genomes() >= self.max_genomes:
             return None
         
+        self.speciation_strategy.generated_genomes += 1
+        
         if self.rng.random() < hp.co_rate:
             # Intra island crossover
             # if self.rng.random() * hp.co_rate < hp.intra_island_co_rate:
-            parents = self.speciation_strategy.try_get_intra_island_crossover_parents(self.rng)
-            if not parents:
-                return self.generate_genome()
+            while True:
+                parents = self.speciation_strategy.try_get_intra_island_crossover_parents(self.rng)
+                if not parents:
+                    return self.generate_genome()
 
-            child: Optional[CnnGenome] = CnnGenome.try_crossover(self.rng, *parents)
-            
-            if child:
-                return child
-            else:
-                return self.generate_genome()
+                child: Optional[CnnGenome] = CnnGenome.try_crossover(self.rng, *parents)
+                
+                if child:
+                    return child
 
             # Inter island crossover
             # else:

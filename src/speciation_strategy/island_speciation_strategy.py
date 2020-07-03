@@ -123,7 +123,6 @@ class IslandSpeciationStrategy(SpeciationStrategy):
 
 
     def generate_genome(self, rng: np.random.Generator):
-        self.generated_genomes += 1
         island_turn = self.next_island_turn()
         
         if self.inserted_genomes == 0:
@@ -141,8 +140,6 @@ class IslandSpeciationStrategy(SpeciationStrategy):
             genome.island = island_turn
             
             genome = genome.copy()
-
-            logging.info("note: we should be performing a mutation or crossover here but do not")
 
             return genome
 
