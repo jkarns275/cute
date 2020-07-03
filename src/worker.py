@@ -1,4 +1,6 @@
+import os
 import logging
+
 
 from mpi4py import MPI
 import tensorflow as tf
@@ -19,6 +21,8 @@ class Worker:
         
         # tf.config.threading.set_inter_op_parallelism_threads(1)
         # tf.config.threading.set_intra_op_parallelism_threads(1)
+        
+        print("visible GPUS: " + os.environ['CUDA_VISIBLE_DEVICES'])
 
     def run(self):
         handlers = {
