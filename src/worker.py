@@ -20,6 +20,7 @@ class Worker:
         # tf.config.threading.set_inter_op_parallelism_threads(1)
         # tf.config.threading.set_intra_op_parallelism_threads(1)
 
+
     def run(self):
         handlers = {
             tags.TERMINATE_TAG: self.handle_terminate,

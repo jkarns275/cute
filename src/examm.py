@@ -85,28 +85,31 @@ class EXAMM:
         self.unimplemented('update_logs')
 
 
-    def generate_genome(self):
+    def generate_genome(self, only_mutate=False):
         if self.get_generated_genomes() >= self.max_genomes:
             return None
         
         self.speciation_strategy.generated_genomes += 1
         
-        if self.rng.random() < hp.co_rate:
+        if not only_mutate and self.rng.random() < hp.co_rate:
             # Intra island crossover
-            # if self.rng.random() * hp.co_rate < hp.intra_island_co_rate:
+            if self.rng.random() * hp.co_rate < hp.intra_island_co_rate:
+                logging.info("trying intra island crossover")
+                parent_fn = self.speciation_strategy.try_get_intra_island_crossover_parents
+            else:
+                logging.info("trying inter island crossover")
+                parent_fn = self.speciation_strategy.try_get_inter_island_crossover_parents
+
             while True:
-                parents = self.speciation_strategy.try_get_intra_island_crossover_parents(self.rng)
+                parents = parent_fn(self.rng)
                 if not parents:
-                    return self.generate_genome()
+                    logging.info("failed to perform crossover (couldn't acquire parents)")
+                    return self.generate_genome(only_mutate=True)
 
                 child: Optional[CnnGenome] = CnnGenome.try_crossover(self.rng, *parents)
                 
                 if child:
                     return child
-
-            # Inter island crossover
-            # else:
-                # parents = self.speciation_strategy.try_get_inter_island_crossover_parents()
         else:
             # Grab genome from speciation strategy
             genome: CnnGenome = self.speciation_strategy.generate_genome(self.rng)

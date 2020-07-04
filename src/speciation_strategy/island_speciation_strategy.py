@@ -99,13 +99,47 @@ class IslandSpeciationStrategy(SpeciationStrategy):
         
         return turn
 
+    def peek_next_island_turn(self):
+        return self.island_turn
 
-    def try_get_inter_island_crossover_parents(self, rng: np.random.Generator) -> Optional[Tuple[CnnGenome]]:
-        return None
-    
+
+    def try_get_inter_island_crossover_parents(self, rng: np.random.Generator) -> Optional[Tuple[CnnGenome, ...]]:
+        # peek since we may not actually be able to give this island a turn (i.e. get a genome from this island
+        # and another island)
+        island_turn = self.peek_next_island_turn()
+
+        if self.islands[island_turn].population:
+            # islands with a population that we can grab a genome from
+            valid_islands = []
+            for i, island in enumerate(self.islands):
+                if i == island_turn:
+                    continue
+                if island.population:
+                    valid_islands.append(island)
+            
+            if not valid_islands:
+                return None 
+
+            population_0 = self.islands[island_turn].population
+            population_1 = valid_islands[rng.integers(0, len(valid_islands))].population
+
+            i0 = rng.integers(0, len(population_0))
+            i1 = rng.integers(0, len(population_1))
+
+            g0 = population_0[i0]
+            g1 = population_1[i1]
+            
+            # we did use the peeked island, so this will increment the island turn
+            self.next_island_turn()
+
+            return (g0, g1)
+        else:
+            return None
+
 
     def try_get_intra_island_crossover_parents(self, rng: np.random.Generator) -> Optional[Tuple[CnnGenome, ...]]:
-        island_turn = self.next_island_turn()
+        # Peek since we may or may not actually give this island a turn (i.e. actually get parent genomes from it)
+        island_turn = self.peek_next_island_turn()
 
         if len(self.islands[island_turn].population) < 2:
             return None
@@ -118,6 +152,9 @@ class IslandSpeciationStrategy(SpeciationStrategy):
                 i1 += 1
             
             assert i1 != i0
+            
+            # we did use the peeked island turn so this will increment the island turn
+            self.next_island_turn()
 
             return (population[i0], population[i1])
 
