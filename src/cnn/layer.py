@@ -24,7 +24,7 @@ class Layer:
                         inputs: Set[int]=set(), outputs: Set[int]=set(), enabled: bool=True):
         self.layer_innovation_number: int = layer_innovation_number
 
-        self.enabled = enabled
+        self.enabled: bool = enabled
         
         self.width: int = width
         self.height: int = height
@@ -48,7 +48,8 @@ class Layer:
 
 
     def __setstate__(self, state):
-        # Not sure if this is necessary but just make  
+        if 'enabled' not in state:
+            state['enabled'] = True
         self.__dict__.update(state)
         self.tf_layer = None
 
