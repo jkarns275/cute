@@ -11,7 +11,7 @@ from speciation_strategy.island_speciation_strategy import IslandSpeciationStrat
 from fitness_log import FitnessLog
 import hp
 
-class EXAMM:
+class Cute:
     
 
     def __init__(self, program_arguments: ProgramArguments):
@@ -77,8 +77,8 @@ class EXAMM:
 
 
     def unimplemented(self, m: str):
-        logging.debug(f"called unimplemented method 'EXAMM::{m}'")
-        # raise Exception(f"method 'EXAMM::{m}' has not been implemented")
+        logging.debug(f"called unimplemented method 'Cute::{m}'")
+        # raise Exception(f"method 'Cute::{m}' has not been implemented")
 
     
     def update_logs(self):

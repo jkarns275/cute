@@ -11,7 +11,7 @@ import tensorflow as tf
 
 import hp
 from cnn import ConvEdge, CnnGenome, DenseEdge, Edge, Layer, InputLayer, OutputLayer
-from examm import EXAMM
+from cute import Cute
 from master import Master
 from worker import Worker
 from dataset import Dataset
@@ -76,8 +76,8 @@ def evo_main():
     if rank == 0:
         max_rank: int = comm.Get_size()
 
-        examm: EXAMM = EXAMM(pa)
-        master = Master(examm, comm, max_rank)
+        cute: Cute = Cute(pa)
+        master = Master(cute, comm, max_rank)
         master.run()
     else:
         worker = Worker(rank, comm)

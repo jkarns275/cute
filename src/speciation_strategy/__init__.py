@@ -1,5 +1,5 @@
 if False:
-    from examm import EXAMM
+    from cute import Cute
 
 class SpeciationStrategy:
 
@@ -36,5 +36,5 @@ class SpeciationStrategy:
         raise Exception("called abstract get_best_genome")
 
 
-    def generate_genome(self, examm: 'EXAMM'):
+    def generate_genome(self, cute: 'Cute'):
         raise Exception("called abstract generate_genome")

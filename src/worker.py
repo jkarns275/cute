@@ -3,7 +3,7 @@ import logging
 from mpi4py import MPI
 import tensorflow as tf
 
-from examm import EXAMM
+from cute import Cute
 from cnn.cnn_genome import CnnGenome
 import tags
 import requests

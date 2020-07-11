@@ -7,7 +7,7 @@ from speciation_strategy import SpeciationStrategy
 from cnn import CnnGenome
 from speciation_strategy.island import Island
 if False:
-    from examm import EXAMM
+    from cute import Cute
 
 
 class IslandSpeciationStrategy(SpeciationStrategy):

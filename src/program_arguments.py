@@ -11,7 +11,7 @@ import hp
 class ProgramArguments(argparse.ArgumentParser):
 
     def __init__(self):
-        super().__init__(description='EXAMM for TensorFlow', add_help=True)
+        super().__init__(description='Cnns through asynchronoUs Training and Evolution (cute) for TensorFlow', add_help=True)
 
         self.dataset: str = None
         self.output_directory: str = None

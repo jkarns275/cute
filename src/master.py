@@ -1,7 +1,7 @@
 from mpi4py import MPI
 import logging
 
-from examm import EXAMM
+from cute import Cute
 from cnn.cnn_genome import CnnGenome
 import tags
 import requests
@@ -10,8 +10,8 @@ import requests
 class Master:
 
 
-    def __init__(self, examm: EXAMM, comm: MPI.Intracomm, max_rank: int):
-        self.examm: EXAMM = examm
+    def __init__(self, cute: Cute, comm: MPI.Intracomm, max_rank: int):
+        self.cute: Cute = cute
         self.comm: MPI.Intracomm = comm
         self.max_rank: int = max_rank
         self.terminates_sent: int = 0
@@ -51,7 +51,7 @@ class Master:
         logging.debug(f"handling work request from {source}")
         work_request_message = requests.recieve_work_request(self.comm, source)
         
-        genome: CnnGenome = self.examm.generate_genome()
+        genome: CnnGenome = self.cute.generate_genome()
 
         if genome is None:
             logging.debug(f"terminating worker {source}")
@@ -67,4 +67,4 @@ class Master:
         logging.debug(f"handling genome from {source}")
         genome: CnnGenome = requests.recieve_genome(self.comm, source)
         logging.debug(f"recieved genome with fitness of {genome.fitness}")
-        self.examm.try_insert_genome(genome)
+        self.cute.try_insert_genome(genome)
