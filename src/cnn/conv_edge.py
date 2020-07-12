@@ -53,7 +53,6 @@ class ConvEdge(Edge):
 
     def validate_tf_layer_output_volume_size(self):
         assert self.tf_layer is not None
-
         shape = self.tf_layer.shape[1:]
         assert self.output_shape == shape
 

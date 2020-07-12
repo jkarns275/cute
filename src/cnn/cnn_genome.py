@@ -6,12 +6,8 @@ from tensorflow import keras
 import numpy as np
 
 from cnn.cnn_util import make_edge_map, get_possible_strides
-from cnn import Edge
-from cnn import ConvEdge
-from cnn import DenseEdge
-from cnn import Layer
-from cnn import InputLayer
-from cnn import OutputLayer
+from cnn import Edge, ConvEdge, FactorizedConvEdge, DenseEdge
+from cnn import Layer, InputLayer, OutputLayer
 
 import hp
 
@@ -95,7 +91,7 @@ class CnnGenome:
         output_edges: List[DenseEdge] = []
         for edge in edge_map.values():
             ty = type(edge)
-            if ty == ConvEdge:
+            if issubclass(ty, ConvEdge):
                 conv_edges.append(cast(ConvEdge, edge))
             elif ty == DenseEdge:
                 output_edges.append(cast(DenseEdge, edge))
@@ -133,7 +129,7 @@ class CnnGenome:
 
         self.conv_edges: List[ConvEdge] = conv_edges
         for conv_edge in conv_edges:
-            assert type(conv_edge) == ConvEdge
+            assert issubclass(type(conv_edge), ConvEdge)
 
         self.output_edges: List[DenseEdge] = output_edges
         for output_edge in output_edges:
@@ -192,6 +188,9 @@ class CnnGenome:
         """
         returns True if there is a path from src to dst, otherwise false
         """
+        
+        if src.layer_innovation_number == dst.layer_innovation_number:
+            return True
 
         # Set of layer innovation numbers that have been visited.
         visited: Set[int] = set([src.layer_innovation_number])
@@ -225,6 +224,51 @@ class CnnGenome:
             visited.add(next_edge.output_layer_in)
 
         return False
+   
+
+    def try_make_new_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator, conv_edge_type=ConvEdge) -> Optional[Edge]:
+        if type(output_layer) == OutputLayer:
+            return None
+
+        if type(input_layer) == OutputLayer:
+            return None
+
+        # No cycles
+        if self.path_exists(output_layer, input_layer):
+            return None
+
+        # No negative filter sizes
+        input_width, input_height, input_depth = input_layer.output_shape
+        output_width, output_height, output_depth = output_layer.output_shape
+       
+        if input_width < output_width or input_height < output_height:
+            return None
+        
+        possible_strides: List[int] = get_possible_strides(*input_layer.output_shape, *output_layer.output_shape)
+        
+        # No duplicate output edges with the same stride
+        for edge_in in input_layer.outputs:
+            edge = self.edge_map[edge_in]
+            if  edge.input_layer_in == input_layer.layer_innovation_number and \
+                edge.output_layer_in == output_layer.layer_innovation_number:
+                conv_edge: ConvEdge = cast(ConvEdge, edge)
+                possible_strides.remove(conv_edge.stride)
+
+        if not possible_strides:
+            return None
+
+        stride: int = possible_strides[rng.integers(0, len(possible_strides))]
+        
+        conv_edge = conv_edge_type( Edge.get_next_edge_innovation_number(), stride, input_layer.layer_innovation_number,
+                                    output_layer.layer_innovation_number, self.layer_map)
+
+        self.conv_edges.append(conv_edge)
+        edge = cast(Edge, conv_edge)
+        
+        logging.info(f"creating factorized conv edge from layer {input_layer.layer_innovation_number} to layer " + \
+                     f"{output_layer.layer_innovation_number}")
+
+        return edge
 
 
     def try_make_new_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
@@ -244,42 +288,42 @@ class CnnGenome:
         if self.path_exists(output_layer, input_layer):
             return None
 
-        # No duplicate edges
-        for edge_in in input_layer.outputs:
-            edge = self.edge_map[edge_in]
-            if  edge.input_layer_in == input_layer.layer_innovation_number and \
-                edge.output_layer_in == output_layer.layer_innovation_number:
-                return None
-
         # if output_layer is the final output layer then we need to make a dense edge
         if type(output_layer) == OutputLayer:
-            logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to output layer " + \
+            # No duplicate output edges
+            for edge_in in input_layer.outputs:
+                edge = self.edge_map[edge_in]
+                if  edge.input_layer_in == input_layer.layer_innovation_number and \
+                    edge.output_layer_in == output_layer.layer_innovation_number:
+                    return None
+            
+            logging.info(f"creating densae edge from layer {input_layer.layer_innovation_number} to output layer " + \
                          f"{output_layer.layer_innovation_number}")
             output_edge = DenseEdge(Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number, 
                                     output_layer.layer_innovation_number, self.layer_map)
             self.output_edges.append(output_edge)
             edge = cast(Edge, output_edge)
         else:
-            # No negative filter sizes
-            input_width, input_height, input_depth = input_layer.output_shape
-            output_width, output_height, output_depth = output_layer.output_shape
-            if input_width < output_width or input_height < output_height:
+            conv_edge = self.try_make_new_conv_edge(input_layer, output_layer, rng)
+
+            if not conv_edge:
                 return None
             
-            logging.info(f"creating edge from layer {input_layer.layer_innovation_number} to layer " + \
-                         f"{output_layer.layer_innovation_number}")
-            
-            possible_strides: List[int] = get_possible_strides(*input_layer.output_shape, *output_layer.output_shape)
-            
-            stride: int = possible_strides[rng.integers(0, len(possible_strides))]
-            
-            conv_edge = ConvEdge(  Edge.get_next_edge_innovation_number(), stride, input_layer.layer_innovation_number,
-                                    output_layer.layer_innovation_number, self.layer_map)
-            self.conv_edges.append(conv_edge)
             edge = cast(Edge, conv_edge)
         
         self.edge_map[edge.edge_innovation_number] = cast(Edge, edge)
 
+        return edge
+
+    
+    def try_make_new_factorized_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
+        edge = self.try_make_new_conv_edge(input_layer, output_layer, rng, conv_edge_type=FactorizedConvEdge)
+
+        if not edge:
+            return None
+
+        self.edge_map[edge.edge_innovation_number] = cast(Edge, edge)
+        
         return edge
 
 
@@ -401,6 +445,29 @@ class CnnGenome:
                 return True
         
         logging.info("failed to complete add_edge mutation")
+        return False
+
+
+    def add_factorized_conv_edge_mut(self, rng: np.random.Generator) -> bool:
+        """
+        This performs an add edge mutation by randomly selecting two layers and trying to create an edge
+        between them. If an edge cannot be created, two different layers will be selected. 
+        This process will be repeated until an edge is successfully created.
+        """
+        logging.info("attempting add_factorized_conv_edge mutation")
+
+        # Try every combination until we find one that works, or we exhaust all combinations.
+        for input_layer_in, output_layer_in in self.random_layer_pair_iterator(rng):
+            input_layer = self.layer_map[input_layer_in]
+            output_layer = self.layer_map[output_layer_in]
+            
+            edge: Optional[Edge] = self.try_make_new_factorized_conv_edge(input_layer, output_layer, rng)
+
+            if edge:
+                logging.info("successfully completed add_factorized_conv_edge mutation")
+                return True
+        
+        logging.info("failed to complete add_factorized_conv_edge mutation")
         return False
 
    

@@ -32,13 +32,14 @@ class Cute:
         self.speciation_strategy.generated_genomes += 1
         
         self.mutation_function_probability_map = {
-                CnnGenome.add_edge_mut: hp.add_edge_probability,
-                CnnGenome.add_layer_mut: hp.add_layer_probability,
-                CnnGenome.disable_edge_mut: hp.disable_edge_probability,
-                CnnGenome.enable_edge_mut: hp.enable_edge_probability,
-                CnnGenome.disable_layer_mut: hp.disable_layer_probability,
-                CnnGenome.enable_layer_mut: hp.enable_layer_probability,
-                CnnGenome.copy_mut: hp.copy_probability
+                CnnGenome.add_edge_mut:                 hp.add_edge_probability,
+                CnnGenome.add_factorized_conv_edge_mut: hp.add_factorized_conv_edge_probability,
+                CnnGenome.add_layer_mut:                hp.add_layer_probability,
+                CnnGenome.disable_edge_mut:             hp.disable_edge_probability,
+                CnnGenome.enable_edge_mut:              hp.enable_edge_probability,
+                CnnGenome.disable_layer_mut:            hp.disable_layer_probability,
+                CnnGenome.enable_layer_mut:             hp.enable_layer_probability,
+                CnnGenome.copy_mut:                     hp.copy_probability
             }
         
         self.mutation_functions = []

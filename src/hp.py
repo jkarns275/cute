@@ -87,6 +87,10 @@ less_fit_crossover_rate: float  = 0.50
 ## How often the add edge mutation should be performed
 add_edge_rate: float            = 1.0
 
+## How often the add factorized convolutional edge mutation should be performed
+add_factorized_conv_edge_rate: float \
+                                = 1.0
+
 ## How often the enable edge mutation should be performed
 enable_edge_rate: float         = 1.0
 
@@ -97,7 +101,7 @@ disable_edge_rate: float        = 1.0
 split_edge_rate: float          = 1.0
 
 ## How often the copy mutation should be performed
-copy_rate: float               = 1.0
+copy_rate: float                = 1.0
 
 ## How often the add layer mutation should be performed
 add_layer_rate: float           = 1.0
@@ -108,12 +112,14 @@ enable_layer_rate: float        = 1.0
 ## How often the disable layer mutation should be performed
 disable_layer_rate: float       = 1.0
 
-rate_sum: float = add_edge_rate + enable_edge_rate + disable_edge_rate + copy_rate + add_layer_rate + enable_layer_rate + disable_layer_rate
+rate_sum: float = add_edge_rate + add_factorized_conv_edge_rate + enable_edge_rate + disable_edge_rate + copy_rate + add_layer_rate + enable_layer_rate + disable_layer_rate
 
 add_edge_probability: float =       add_edge_rate / rate_sum
-enable_edge_probability: float =    enable_edge_rate / rate_sum
-disable_edge_probability: float =   disable_edge_rate / rate_sum
-add_layer_probability: float =      add_layer_rate / rate_sum
-enable_layer_probability: float =   enable_layer_rate / rate_sum
-disable_layer_probability: float = disable_layer_rate / rate_sum
-copy_probability: float =          copy_rate / rate_sum
+add_factorized_conv_edge_probability: float \
+                                    = add_factorized_conv_edge_rate / rate_sum
+enable_edge_probability: float      = enable_edge_rate / rate_sum
+disable_edge_probability: float     = disable_edge_rate / rate_sum
+add_layer_probability: float        = add_layer_rate / rate_sum
+enable_layer_probability: float     = enable_layer_rate / rate_sum
+disable_layer_probability: float    = disable_layer_rate / rate_sum
+copy_probability: float             = copy_rate / rate_sum

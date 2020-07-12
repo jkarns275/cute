@@ -89,7 +89,7 @@ class Layer:
         
         if not self.enabled:
             return None
-
+        
         maybe_input_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
         input_layers: List[tf.Tensor] = [x for x in maybe_input_layers if x is not None]
             

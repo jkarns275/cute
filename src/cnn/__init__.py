@@ -1,6 +1,7 @@
 from cnn.edge import Edge
 from cnn.dense_edge import DenseEdge
 from cnn.conv_edge import ConvEdge
+from cnn.factorized_conv_edge import FactorizedConvEdge
 from cnn.layer import Layer
 from cnn.output_layer import OutputLayer
 from cnn.input_layer import InputLayer
