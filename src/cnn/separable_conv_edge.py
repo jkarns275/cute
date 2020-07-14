@@ -13,7 +13,7 @@ if False:
     from cnn.layer import Layer
 
 
-class FactorizedConvEdge(ConvEdge):
+class SeparableConvEdge(ConvEdge):
 
 
     def __init__(self, edge_innovation_number: int, stride: int, input_layer_in: int, output_layer_in: int, layer_map: Dict[int, 'Layer'],
@@ -21,8 +21,8 @@ class FactorizedConvEdge(ConvEdge):
         super().__init__(edge_innovation_number, stride, input_layer_in, output_layer_in, layer_map, enabled)
 
 
-    def copy(self, layer_map: Dict[int, 'Layer']) -> 'FactorizedConvEdge':
-        return FactorizedConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map, self.enabled)
+    def copy(self, layer_map: Dict[int, 'Layer']) -> 'SeparableConvEdge':
+        return SeparableConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map, self.enabled)
 
 
     def get_name(self):

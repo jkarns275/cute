@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional, Dict
 import tensorflow.keras as keras
 import tensorflow as tf
 
+import hp
 from cnn.conv_edge import ConvEdge
 from cnn.layer import Layer
 from cnn.edge import Edge
@@ -44,6 +45,6 @@ class InputLayer(Layer):
         if self.tf_layer is not None:
             return self.tf_layer
 
-        self.tf_layer = keras.Input(shape=(self.width, self.height, self.number_channels))
+        self.tf_layer = keras.Input(shape=(self.width, self.height, self.number_channels), batch_size=hp.get_batch_size())
 
         return self.tf_layer

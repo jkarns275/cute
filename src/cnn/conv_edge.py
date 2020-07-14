@@ -39,12 +39,19 @@ class ConvEdge(Edge):
         self.tf_layer: Optional[tf.Tensor] = None        
 
 
+    def validate_output_volume_size(self):
+        # Assume 0 padding.
+        width, height, depth = calculate_output_volume_size(self.stride, 0, self.filter_width, self.filter_height, 
+                                                            self.number_filters, *self.input_shape)
+        
+        assert (width, height, depth) == self.output_shape
+
+
     def copy(self, layer_map: Dict[int, 'Layer']) -> 'ConvEdge':
         return ConvEdge(self.edge_innovation_number, self.stride, self.input_layer_in, self.output_layer_in, layer_map, self.enabled)
 
 
-    def validate_output_volume_size(self):
-        # Assume 0 padding.
+
         width, height, depth = calculate_output_volume_size(self.stride, 0, self.filter_width, self.filter_height, 
                                                             self.number_filters, *self.input_shape)
         

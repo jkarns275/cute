@@ -140,4 +140,5 @@ class Layer:
 
     def validate_tf_inputs(self, tf_inputs: List[tf.Tensor]):
         for input in tf_inputs:
-            assert input.shape[1:] == self.output_shape
+            assert input.shape[1:-1] == self.output_shape[:-1]
+            assert input.shape[-1] <= self.output_shape[-1]

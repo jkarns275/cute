@@ -6,7 +6,7 @@ from tensorflow import keras
 import numpy as np
 
 from cnn.cnn_util import make_edge_map, get_possible_strides
-from cnn import Edge, ConvEdge, FactorizedConvEdge, DenseEdge
+from cnn import Edge, ConvEdge, SeparableConvEdge, FractionalMaxPoolingEdge, DenseEdge
 from cnn import Layer, InputLayer, OutputLayer
 
 import hp
@@ -224,8 +224,24 @@ class CnnGenome:
             visited.add(next_edge.output_layer_in)
 
         return False
-   
+    
 
+    def register_edge(self, edge: Edge):
+        if issubclass(type(edge), ConvEdge):
+            for conv_edge in self.conv_edges:
+                assert conv_edge.edge_innovation_number != edge.edge_innovation_number
+
+            self.conv_edges.append(cast(ConvEdge, edge))
+        elif issubclass(type(edge), DenseEdge):
+            for dense_edge in self.output_edges:
+                assert dense_edge.edge_innovation_number != edge.edge_innovation_number
+
+            self.output_edges.append(cast(DenseEdge, edge))
+        
+        assert edge.edge_innovation_number not in self.edge_map
+        self.edge_map[edge.edge_innovation_number] = edge
+
+    
     def try_make_new_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator, conv_edge_type=ConvEdge) -> Optional[Edge]:
         if type(output_layer) == OutputLayer:
             return None
@@ -252,7 +268,8 @@ class CnnGenome:
             if  edge.input_layer_in == input_layer.layer_innovation_number and \
                 edge.output_layer_in == output_layer.layer_innovation_number:
                 conv_edge: ConvEdge = cast(ConvEdge, edge)
-                possible_strides.remove(conv_edge.stride)
+                if conv_edge.stride in possible_strides:
+                    possible_strides.remove(conv_edge.stride)
 
         if not possible_strides:
             return None
@@ -261,15 +278,51 @@ class CnnGenome:
         
         conv_edge = conv_edge_type( Edge.get_next_edge_innovation_number(), stride, input_layer.layer_innovation_number,
                                     output_layer.layer_innovation_number, self.layer_map)
-
-        self.conv_edges.append(conv_edge)
+        self.register_edge(conv_edge)
+        
         edge = cast(Edge, conv_edge)
         
-        logging.info(f"creating factorized conv edge from layer {input_layer.layer_innovation_number} to layer " + \
+        logging.info(f"creating separable conv edge from layer {input_layer.layer_innovation_number} to layer " + \
                      f"{output_layer.layer_innovation_number}")
 
         return edge
+    
 
+    def try_make_new_pooling_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator, pooling_edge_type=FractionalMaxPoolingEdge) -> Optional[Edge]:
+        if type(output_layer) == OutputLayer:
+            return None
+
+        if type(input_layer) == OutputLayer:
+            return None
+
+        # No cycles
+        if self.path_exists(output_layer, input_layer):
+            return None
+
+        iw, ih, id = input_layer.output_shape
+        ow, oh, od = output_layer.output_shape
+
+        # In tensorflow the size must be less than and input channels should be the same as output channels,
+        # but if there are moer output channels we will just use padding
+        # Okay just kidding this padding thing is tough
+        if ow >= iw or oh >= ih or id > od:
+            return None
+
+        # No duplicate output edges with the same stride
+        for edge_in in input_layer.outputs:
+            edge = self.edge_map[edge_in]
+            if  edge.input_layer_in == input_layer.layer_innovation_number and \
+                edge.output_layer_in == output_layer.layer_innovation_number:
+                if type(edge) == FractionalMaxPoolingEdge:
+                    return None
+        pooling_edge: ConvEdge = pooling_edge_type( Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number,
+                                                    output_layer.layer_innovation_number, self.layer_map)
+
+        self.register_edge(pooling_edge)
+        edge = cast(Edge, pooling_edge)
+
+        return edge
+        
 
     def try_make_new_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
         """
@@ -301,7 +354,7 @@ class CnnGenome:
                          f"{output_layer.layer_innovation_number}")
             output_edge = DenseEdge(Edge.get_next_edge_innovation_number(), input_layer.layer_innovation_number, 
                                     output_layer.layer_innovation_number, self.layer_map)
-            self.output_edges.append(output_edge)
+            self.register_edge(output_edge)
             edge = cast(Edge, output_edge)
         else:
             conv_edge = self.try_make_new_conv_edge(input_layer, output_layer, rng)
@@ -311,13 +364,12 @@ class CnnGenome:
             
             edge = cast(Edge, conv_edge)
         
-        self.edge_map[edge.edge_innovation_number] = cast(Edge, edge)
 
         return edge
 
     
-    def try_make_new_factorized_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
-        edge = self.try_make_new_conv_edge(input_layer, output_layer, rng, conv_edge_type=FactorizedConvEdge)
+    def try_make_new_separable_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
+        edge = self.try_make_new_conv_edge(input_layer, output_layer, rng, conv_edge_type=SeparableConvEdge)
 
         if not edge:
             return None
@@ -448,29 +500,55 @@ class CnnGenome:
         return False
 
 
-    def add_factorized_conv_edge_mut(self, rng: np.random.Generator) -> bool:
+    def add_separable_conv_edge_mut(self, rng: np.random.Generator) -> bool:
         """
-        This performs an add edge mutation by randomly selecting two layers and trying to create an edge
+        This performs an add seperable edge mutation by randomly selecting two layers and trying to create an edge
         between them. If an edge cannot be created, two different layers will be selected. 
         This process will be repeated until an edge is successfully created.
+
+        A separable convolution is one that uses two convolve operations using a nx1 filter and 1xn filter
+        to achieve the same output volume size as an nxn filter. It requires 2n parameters as compared to n*n
         """
-        logging.info("attempting add_factorized_conv_edge mutation")
+        logging.info("attempting add_separable_conv_edge mutation")
 
         # Try every combination until we find one that works, or we exhaust all combinations.
         for input_layer_in, output_layer_in in self.random_layer_pair_iterator(rng):
             input_layer = self.layer_map[input_layer_in]
             output_layer = self.layer_map[output_layer_in]
             
-            edge: Optional[Edge] = self.try_make_new_factorized_conv_edge(input_layer, output_layer, rng)
+            edge: Optional[Edge] = self.try_make_new_separable_conv_edge(input_layer, output_layer, rng)
 
             if edge:
-                logging.info("successfully completed add_factorized_conv_edge mutation")
+                logging.info("successfully completed add_separable_conv_edge mutation")
                 return True
         
-        logging.info("failed to complete add_factorized_conv_edge mutation")
+        logging.info("failed to complete add_separable_conv_edge mutation")
         return False
 
+    
+    def add_pooling_edge_mut(self, rng: np.random.Generator) -> bool:
+        """
+        This attempts to add a pooling edge between two random layers.
+        Every combination of layers will be tried, exhaustively, until we successfully connect to layers.
+        This process will be repeated until an edge is successfully created.
+        """
+        logging.info("attempting add_edge mutation")
+
+        # Try every combination until we find one that works, or we exhaust all combinations.
+        for input_layer_in, output_layer_in in self.random_layer_pair_iterator(rng):
+            input_layer = self.layer_map[input_layer_in]
+            output_layer = self.layer_map[output_layer_in]
+            
+            edge: Optional[Edge] = self.try_make_new_pooling_edge(input_layer, output_layer, rng)
+
+            if edge:
+                logging.info("successfully completed add_pooling_edge mutation")
+                return True
+        
+        logging.info("failed to complete add_pooling_edge mutation")
+        return False
    
+
     def add_layer_mut(self, rng: np.random.Generator):
         """
         This performs an add layer mutation by selecting two random layers and creating a layer that connects
