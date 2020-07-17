@@ -33,8 +33,6 @@ class Cute:
         
         self.mutation_function_probability_map = {
                 CnnGenome.add_edge_mut:                 hp.add_edge_probability,
-                CnnGenome.add_separable_conv_edge_mut:  hp.add_separable_conv_edge_probability,
-                CnnGenome.add_pooling_edge_mut:         hp.add_pooling_edge_probability,
                 CnnGenome.add_layer_mut:                hp.add_layer_probability,
                 CnnGenome.disable_edge_mut:             hp.disable_edge_probability,
                 CnnGenome.enable_edge_mut:              hp.enable_edge_probability,

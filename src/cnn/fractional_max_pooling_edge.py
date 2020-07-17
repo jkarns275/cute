@@ -62,7 +62,6 @@ class FractionalMaxPoolingEdge(ConvEdge):
         input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)
         
         assert self.filter_width == self.filter_height
-        
         def max_pool(x):
             # https://www.tensorflow.org/api_docs/python/tf/nn/fractional_max_pool
             # returns three tensors
@@ -70,7 +69,12 @@ class FractionalMaxPoolingEdge(ConvEdge):
             return mp.output
 
         self.tf_layer = keras.layers.Lambda(lambda x: max_pool(x), name=self.get_name())(input_tf_layer)
-        
+        # So sometimes this size is incorrect due to a rounding error, for now i am just going to pad it.
+        # TODO: Fix this / try different alphas until it is correct
+        if self.tf_layer.shape[1:3] != self.output_shape[:2]:
+            dif = self.output_shape[0] - self.tf_layer.shape[1]
+            self.tf_layer = keras.layers.ZeroPadding2D(padding=(dif, dif))(self.tf_layer)
+
         if self.input_shape[2] < self.output_shape[2]:
             # Add some zero channels at the end so output shape is as expected
             # We have input_shape[2] channels but need to get to output_shape[2] channels

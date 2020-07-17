@@ -88,13 +88,6 @@ less_fit_crossover_rate: float  = 0.50
 ## How often the add edge mutation should be performed
 add_edge_rate: float            = 1.0
 
-## How often the add separable convolutional edge mutation should be performed
-add_separable_conv_edge_rate: float \
-                                = 1.0
-
-## How often the add pooling edge mutation should be performed
-add_pooling_edge_rate: float    = 1.0
-
 ## How often the enable edge mutation should be performed
 enable_edge_rate: float         = 1.0
 
@@ -116,15 +109,21 @@ enable_layer_rate: float        = 1.0
 ## How often the disable layer mutation should be performed
 disable_layer_rate: float       = 1.0
 
-rate_sum: float = add_edge_rate + add_separable_conv_edge_rate + add_pooling_edge_rate + enable_edge_rate + disable_edge_rate + copy_rate + add_layer_rate + enable_layer_rate + disable_layer_rate
+mutation_rate_sum: float = add_edge_rate + enable_edge_rate + disable_edge_rate + copy_rate + add_layer_rate + enable_layer_rate + disable_layer_rate
 
-add_edge_probability: float =       add_edge_rate / rate_sum
+add_edge_probability: float         = add_edge_rate / mutation_rate_sum
+enable_edge_probability: float      = enable_edge_rate / mutation_rate_sum
+disable_edge_probability: float     = disable_edge_rate / mutation_rate_sum
+add_layer_probability: float        = add_layer_rate / mutation_rate_sum
+enable_layer_probability: float     = enable_layer_rate / mutation_rate_sum
+disable_layer_probability: float    = disable_layer_rate / mutation_rate_sum
+copy_probability: float             = copy_rate / mutation_rate_sum
+
+
+# Probabilities for choosing the type of edge in the add_edge mutation
+add_conv_edge_probability: float    = 0.25 / 3
 add_separable_conv_edge_probability: float \
-                                    = add_separable_conv_edge_rate / rate_sum
-add_pooling_edge_probability: float = add_pooling_edge_rate / rate_sum
-enable_edge_probability: float      = enable_edge_rate / rate_sum
-disable_edge_probability: float     = disable_edge_rate / rate_sum
-add_layer_probability: float        = add_layer_rate / rate_sum
-enable_layer_probability: float     = enable_layer_rate / rate_sum
-disable_layer_probability: float    = disable_layer_rate / rate_sum
-copy_probability: float             = copy_rate / rate_sum
+                                    = 0.25 / 3
+add_pooling_edge_probability: float = 0.75
+add_dense_edge_probability: float   = 0.25 / 3
+
