@@ -72,8 +72,19 @@ class FractionalMaxPoolingEdge(ConvEdge):
         # So sometimes this size is incorrect due to a rounding error, for now i am just going to pad it.
         # TODO: Fix this / try different alphas until it is correct
         if self.tf_layer.shape[1:3] != self.output_shape[:2]:
-            dif = self.output_shape[0] - self.tf_layer.shape[1]
-            self.tf_layer = keras.layers.ZeroPadding2D(padding=(dif, dif))(self.tf_layer)
+            dif = int(self.output_shape[0] - self.tf_layer.shape[1])
+            
+            assert dif > 0
+            
+            # Padding is added on both sides, if we need to add an odd number of padding cell
+            # we need to use a trick
+            if dif % 2 == 0:
+                pad = dif // 2
+                self.tf_layer = keras.layers.ZeroPadding2D(padding=(dif, dif))(self.tf_layer)
+            else:
+                pad0 = dif // 2
+                pad1 = pad0 + 1
+                self.tf_layer = keras.layers.ZeroPadding2D(padding=((pad0, pad1), (pad0, pad1)))(self.tf_layer)
 
         if self.input_shape[2] < self.output_shape[2]:
             # Add some zero channels at the end so output shape is as expected
