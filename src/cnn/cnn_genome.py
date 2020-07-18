@@ -72,22 +72,26 @@ class CnnGenome:
                 layer_map[layer.layer_innovation_number] = copy
                 if not enabled:
                     disabled_layers.add(layer.layer_innovation_number)
-       
+            elif enabled and layer.layer_innovation_number in disabled_layers:
+                disabled_layers.remove(layer.layer_innovation_number)
 
         def try_add_edge(edge: Edge, enabled: bool=True):
             """
             Add a copy of the supplied edge to the edge map, enabling or disabling it based on the value
             of enabled
             """
-            if  edge.edge_innovation_number not in edge_map and \
-                edge.input_layer_in in layer_map and \
+            if  edge.input_layer_in in layer_map and \
                 edge.output_layer_in in layer_map:
-                copy = edge.copy(layer_map)
-                copy.set_enabled(enabled)
-                edge_map[edge.edge_innovation_number] = copy
-                if not enabled:
-                    disabled_edges.add(edge.edge_innovation_number)
+                
+                if edge.edge_innovation_number not in edge_map:
+                    copy = edge.copy(layer_map)
+                    copy.set_enabled(enabled)
+                    edge_map[edge.edge_innovation_number] = copy
+                    if not enabled:
+                        disabled_edges.add(edge.edge_innovation_number)
 
+                elif enabled and edge.edge_innovation_number in disabled_edges:
+                    disabled_edges.remove(edge.edge_innovation_number)
 
         for i, parent in enumerate(parents):
             accept_rate = hp.get_crossover_accept_rate(i)
