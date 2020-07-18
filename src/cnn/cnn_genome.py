@@ -98,11 +98,11 @@ class CnnGenome:
 
             for layer in parent.layer_map.values():
                 sample = rng.random()
-                try_add_layer(layer, sample <= accept_rate)
+                try_add_layer(layer, sample <= accept_rate and layer.is_enabled())
 
             for edge in parent.edge_map.values():
                 sample = rng.random()
-                try_add_edge(edge, sample <= accept_rate)
+                try_add_edge(edge, sample <= accept_rate and layer.is_enabled())
 
             # We will get the "best" weights here because we sorted by genome fitness - the first things added
             # will have the best fitness
