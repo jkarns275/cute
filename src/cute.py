@@ -54,12 +54,12 @@ class Cute:
 
     def generate_initial_genome(self):
         input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), 28, 28, 1)
-        hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 14, 14, 16)
+        hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 8, 8, 16)
         output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [128, 32], 10)
 
         layer_map = make_layer_map([input_layer, hidden_layer, output_layer])
 
-        edge_1: ConvEdge = ConvEdge(Edge.get_next_edge_innovation_number(), 1, input_layer.layer_innovation_number,
+        edge_1: ConvEdge = ConvEdge(Edge.get_next_edge_innovation_number(), 2, input_layer.layer_innovation_number,
                                     hidden_layer.layer_innovation_number, layer_map)
         edge_2: DenseEdge = DenseEdge(Edge.get_next_edge_innovation_number(), hidden_layer.layer_innovation_number,
                                         output_layer.layer_innovation_number, layer_map)
