@@ -25,7 +25,9 @@ class ConvEdge(Edge):
         
         filter_width, filter_height = \
                 calculate_required_filter_size(stride, *self.input_shape, *self.output_shape)
-
+        print(self.input_shape)
+        print(self.output_shape)
+        print(f"{filter_width}, {filter_height}")
         assert filter_width > 0
         assert filter_height > 0
 
@@ -91,8 +93,8 @@ class ConvEdge(Edge):
                                     input_shape=self.input_shape,
                                     name=self.get_name())(input_tf_layer)
         
-        self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)
         self.tf_layer = make_activation_layer()(self.tf_layer)
+        self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)
 
         self.validate_tf_layer_output_volume_size()
         

@@ -52,8 +52,8 @@ class SeparableConvEdge(ConvEdge):
                                                         input_shape=self.input_shape,
                                                         name=self.get_name() + "_" + str(self.filter_height) + "x1")(input_tf_layer)
         
-        self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)
         self.tf_layer = make_activation_layer()(self.tf_layer)
+        self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)
 
         self.validate_tf_layer_output_volume_size()
         
