@@ -59,7 +59,9 @@ class FitnessLog:
         self.path_str += "fitness_log.csv"
 
         try:
-            self.file = open(self.path_str, "w+")
+            with open(self.path_str, "w+") as f:
+                # Creates and cleares the file if it already exists
+                pass
         except Exception as e:
             logging.fatal("Encountered fatal error when trying to open fitness log: \n" + str(e))
             sys.exit(-1)
@@ -78,15 +80,16 @@ class FitnessLog:
             line = line + "\n"
 
         try:
-            self.file.write(line)
-            self.file.flush()
+            with open(self.path_str, "a+") as f:
+                f.write(line)
+                f.flush()
         except Exception as e:
             logging.fatal("Encountered fatal error when trying to write to fitness log: \n" + str(e))
             sys.exit(-1)
 
 
     def close(self):
-        self.file.close()
+        pass
 
 
     def update_log(self, cute: 'Cute'):
