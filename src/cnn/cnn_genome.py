@@ -209,7 +209,7 @@ class CnnGenome:
 
     def __eq__(self, o: object) -> bool:
         if type(o) == CnnGenome:
-            if self.disable_edges != o.disabled_edges:
+            if self.disabled_edges != o.disabled_edges:
                 return False
             elif self.disabled_layers != o.disabled_layers:
                 return False
