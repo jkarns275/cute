@@ -207,6 +207,22 @@ class CnnGenome:
                             disabled_edges=self.disabled_edges.copy(), fitness=self.fitness, accuracy=self.accuracy, history=self.history)
 
 
+    def __eq__(self, o: object) -> bool:
+        if type(o) == CnnGenome:
+            if self.disable_edges != o.disabled_edges:
+                return False
+            elif self.disabled_layers != o.disabled_layers:
+                return False
+            elif set(self.layer_map.keys()) != set(o.layer_map.keys()):
+                return False
+            elif set(self.edge_map.keys()) != set(o.edge_map.keys()):
+                return False
+
+            return True
+        else:
+            return False
+
+
     def path_exists(self, src: Layer, dst: Layer, include_disabled=True) -> bool:
         """
         returns True if there is a path from src to dst, otherwise false

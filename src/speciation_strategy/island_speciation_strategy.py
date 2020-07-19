@@ -41,7 +41,7 @@ class IslandSpeciationStrategy(SpeciationStrategy):
             new_best = True
         else:
             new_best = False
-        
+            
         removed_genome, insert_position  = self.islands[genome.island].try_insert_genome(genome)
         inserted = removed_genome != None or insert_position >= 0
         

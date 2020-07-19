@@ -17,11 +17,25 @@ class Island:
     
     def try_insert_genome(self, genome: CnnGenome):
         logging.info(f"inserting genome with fitness of {genome.fitness}")
-        
+
         if len(self.population) < self.population_size:
             self.population.append(genome)
             return None, 0
         elif self.population[-1].fitness > genome.fitness:
+            # Search for clones and only insert 
+            clone_index, clone = None, None
+            for i, other_genome in enumerate(self.population):
+                if genome == other_genome:
+                    clone_index, Clone = i, other_genome
+                    break
+
+            if clone_index is not None:
+                # if the clone is worse remove it, otherwise don't insert this genome since it is worse
+                if clone.fitness > genome.fitness:
+                    self.population.pop(clone_index)
+                else:
+                    return None, -1
+
             insert_position = sorted_insert(genome, self.population, key=lambda genome: genome.fitness)
             genome = self.population.pop()
 
