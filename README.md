@@ -1,6 +1,6 @@
 # cute
 cute is an evolutionary algorithm to evolve convolutional neural networks for image classification tasks, and eventually other tasks like object detection.
-cute stands for **C**NN through asynchrono**U**s **T**raining and **E**volution
+cute stands for **C**NNs through asynchrono**U**s **T**raining and **E**volution
 
 
 # TODO:
