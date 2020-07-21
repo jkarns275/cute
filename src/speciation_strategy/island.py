@@ -26,7 +26,7 @@ class Island:
             clone_index, clone = None, None
             for i, other_genome in enumerate(self.population):
                 if genome == other_genome:
-                    clone_index, Clone = i, other_genome
+                    clone_index, clone = i, other_genome
                     break
 
             if clone_index is not None:
