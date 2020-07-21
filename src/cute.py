@@ -65,7 +65,7 @@ class Cute:
                                         output_layer.layer_innovation_number, layer_map)
         
         genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set())
-       
+      
         logging.info("performing some tests of CnnGenome::path_exists")
 
         assert genome.path_exists(input_layer, output_layer)

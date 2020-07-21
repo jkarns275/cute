@@ -2,12 +2,17 @@ from typing import Dict
 
 # This file contains all of the hyper parameters.
 import tensorflow as tf
+import tensorflow.keras as keras
 import numpy as np
 
 from dataset import Dataset
 
 
-PARAMETER_COUNT_PENALTY_WEIGHT: float = 1e-8
+L2_REGULARIZATION_WEIGHT: float         = 1e-7
+PARAMETER_COUNT_PENALTY_WEIGHT: float   = 1e-8
+
+def get_regularizer():
+    return keras.regularizers.l2(L2_REGULARIZATION_WEIGHT)
 
 __CNN_ACTIVATION_TYPE = lambda: tf.keras.layers.LeakyReLU(alpha=0.1)
 def make_activation_layer():

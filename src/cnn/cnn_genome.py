@@ -73,6 +73,7 @@ class CnnGenome:
                 if not enabled:
                     disabled_layers.add(layer.layer_innovation_number)
             elif enabled and layer.layer_innovation_number in disabled_layers:
+                layer_map[layer.layer_innovation_number].set_enabled(enabled)
                 disabled_layers.remove(layer.layer_innovation_number)
 
         def try_add_edge(edge: Edge, enabled: bool=True):
@@ -91,6 +92,7 @@ class CnnGenome:
                         disabled_edges.add(edge.edge_innovation_number)
 
                 elif enabled and edge.edge_innovation_number in disabled_edges:
+                    edge_map[edge.edge_innovation_number].set_enabled(enabled)
                     disabled_edges.remove(edge.edge_innovation_number)
 
         for i, parent in enumerate(parents):
@@ -130,7 +132,7 @@ class CnnGenome:
         child = CnnGenome(  number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
                             epigenetic_weights, disabled_layers, disabled_edges)
 
-        if child.path_exists(child.input_layer, child.output_layer, include_disabled=False):
+        if child.path_exists(child.input_layer, child.output_layer, False):
             logging.info("crossover succeeded!")
             logging.info(  f"child has {child.number_enabled_edges()} enabled edges and " + \
                             f"{child.number_enabled_layers()} enabled layers")
@@ -232,7 +234,7 @@ class CnnGenome:
             return True
 
         # Set of layer innovation numbers that have been visited.
-        visited: Set[int] = set([src.layer_innovation_number])
+        visited: Set[int] = {src.layer_innovation_number}
 
         # Edges we should traverse
         edges_to_visit: List[int] = list(src.outputs)

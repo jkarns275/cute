@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, cast
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer, make_batch_norm_layer
+from hp import make_activation_layer, make_batch_norm_layer, get_regularizer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.conv_edge import ConvEdge
 from cnn.edge import Edge
@@ -45,12 +45,16 @@ class SeparableConvEdge(ConvEdge):
         input_tf_layer: tf.Tensor = cast(tf.Tensor, maybe_input_tf_layer)
         
         assert self.filter_width == self.filter_height
-        self.tf_layer = keras.layers.SeparableConv2D(   self.number_filters,
-                                                        (self.filter_width, self.filter_height),
-                                                        strides=(self.stride, self.stride),
-                                                        activation='linear',
-                                                        input_shape=self.input_shape,
-                                                        name=self.get_name() + "_" + str(self.filter_height) + "x1")(input_tf_layer)
+        self.tf_layer = \
+                keras.layers.SeparableConv2D(
+                        self.number_filters,
+                        (self.filter_width, self.filter_height),
+                        strides=(self.stride, self.stride),
+                        activation='linear',
+                        kernel_regularizer=get_regularizer(),
+                        bias_regularizer=get_regularizer(),
+                        input_shape=self.input_shape,
+                        name=self.get_name() + "_" + str(self.filter_height) + "x1")(input_tf_layer)
         
         self.tf_layer = make_activation_layer()(self.tf_layer)
         self.tf_layer = make_batch_norm_layer(name=self.get_name() + "_batch_norm")(self.tf_layer)

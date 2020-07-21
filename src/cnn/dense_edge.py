@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, cast
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer
+from hp import make_activation_layer, get_regularizer
 from cnn.edge import Edge
 from cnn.layer import Layer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
@@ -72,7 +72,13 @@ class DenseEdge(Edge):
 
         # It is important that there is no activation function here. The activation function
         # will be applied after an Add layer is applied in the OutputLayer
-        dense = keras.layers.Dense(number_units, input_shape=(shape,), activation='linear', name=self.get_name())(flattened)
+        dense = \
+            keras.layers.Dense( number_units, 
+                                input_shape=(shape,),
+                                activation='linear',
+                                kernel_regularizer=get_regularizer(),
+                                bias_regularizer=get_regularizer(),
+                                name=self.get_name())(flattened)
         
         self.tf_layer = dense
 

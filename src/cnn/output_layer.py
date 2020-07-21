@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, Set
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer, make_classification_layer
+from hp import make_activation_layer, make_classification_layer, get_regularizer
 from cnn.edge import Edge
 from cnn.layer import Layer
 
@@ -89,7 +89,14 @@ class OutputLayer(Layer):
                     layer = intermediate_layers[0]           
             else:
                 shape = layer.shape[1:]
-                layer = keras.layers.Dense(size, input_shape=shape, activation='linear', name=self.get_name() + f"_{i}")(layer)
+                layer = \
+                    keras.layers.Dense(
+                            size,
+                            input_shape=shape,
+                            activation='linear',
+                            kernel_regularizer=get_regularizer(),
+                            bias_regularizer=get_regularizer(),
+                            name=self.get_name() + f"_{i}")(layer)
 
             if i == len(self.dense_layers) - 1:
                 layer = make_classification_layer()(layer)
