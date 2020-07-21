@@ -10,9 +10,10 @@ import hp
 
 class ProgramArguments(argparse.ArgumentParser):
 
-    def __init__(self):
+    def __init__(self, rank: int):
         super().__init__(description='Cnns through asynchronoUs Training and Evolution (cute) for TensorFlow', add_help=True)
 
+        self.rank: int = rank
         self.dataset: str = None
         self.output_directory: str = None
         self.number_islands: int = None
@@ -34,13 +35,14 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=1, type=int, help='the number of iterations of backpropagation to be applied to generated genomes to evaluate them')
         self.add_argument('-ig', '--ignore_gpus', metavar='ignore_gpus', action='store',
                 default=0, type=int, help='whether or not to ignore gpus. if set cpus will be used instead')
+        self.add_argument('-sf', '--slurm_fix', metavar='slurm_fix', action='store', default=0, type=int, help='whether or not to apply a fix that ensures only a single gpu is visible to each MPI process')
 
         self.args = self.parse_args()
 
         self.set_dataset()
         self.set_number_epochs()
+        self.set_slurm_fix()
         self.set_ignore_gpus()
-
 
     def set_number_epochs(self):
         hp.set_number_epochs(self.args.backprop_iterations)
@@ -51,7 +53,17 @@ class ProgramArguments(argparse.ArgumentParser):
 
         dataset = Dataset.dataset_from_arguments(self)
         set_dataset(dataset)
+    
 
+    def set_slurm_fix(self):
+        if self.args.slurm_fix and not self.args.ignore_gpus:
+            visible_gpus_str = os.environ['CUDA_VISIBLE_DEVICES']
+            print(visible_gpus_str)
+            split = visible_gpus.split(',')
+            divisor = len(split)
+            visible_gpus = list(map(int, split))
+            os.environ['CUDA_VISIBLE_DEVICES'] = f"{visible_gpus[self.rank % divisor]}"
+            print(os.environ['CUDA_VISIBLE_DEVICES'])
 
     def set_ignore_gpus(self):
         if self.args.ignore_gpus:

@@ -124,7 +124,7 @@ def evo_main():
 
     logging.basicConfig(level=logging.DEBUG, format=f'[%(asctime)s][rank {rank}] %(message)s')
     
-    pa = ProgramArguments()
+    pa = ProgramArguments(rank)
     
     gpu_fix()
 
