@@ -315,7 +315,7 @@ class CnnGenome:
 
     
     def try_make_new_conv_edge(self, input_layer: Layer, output_layer: Layer, rng: np.random.Generator, conv_edge_type=ConvEdge) -> Optional[Edge]:
-        if not self.valid_connection(input_layer, output_layer, ConvEdge):
+        if not self.valid_connection(input_layer, output_layer):
             return None
 
         # No negative filter sizes
@@ -331,7 +331,8 @@ class CnnGenome:
         for edge_in in input_layer.outputs:
             edge = self.edge_map[edge_in]
             if  edge.input_layer_in == input_layer.layer_innovation_number and \
-                edge.output_layer_in == output_layer.layer_innovation_number:
+                edge.output_layer_in == output_layer.layer_innovation_number and \
+                type(edge) == conv_edge_type:
                 conv_edge: ConvEdge = cast(ConvEdge, edge)
                 if conv_edge.stride in possible_strides:
                     possible_strides.remove(conv_edge.stride)
