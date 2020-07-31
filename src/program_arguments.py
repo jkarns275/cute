@@ -34,7 +34,8 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=1, type=int, help='the number of iterations of backpropagation to be applied to generated genomes to evaluate them')
         self.add_argument('-ig', '--ignore_gpus', metavar='ignore_gpus', action='store',
                 default=0, type=int, help='whether or not to ignore gpus. if set cpus will be used instead')
-
+        self.add_argument('-l2', '--l2_weight', metavar='l2_weight', action='store', default=None, type=float,
+                help='the weight to scale L2 loss by when calculating model loss')
         self.args = self.parse_args()
 
         self.set_dataset()
@@ -44,7 +45,16 @@ class ProgramArguments(argparse.ArgumentParser):
 
     def set_number_epochs(self):
         hp.set_number_epochs(self.args.backprop_iterations)
-   
+    
+
+    def set_l2_weight(self):
+        if self.args.l2_weight:
+            x = self.args.l2_weight
+        else: 
+            x = 0.0
+
+        hp.L2_REGULARIZATION_WEIGHT = x
+
 
     def set_dataset(self):
         self.args.dataset = self.args.dataset[0].lower()

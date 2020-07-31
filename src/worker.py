@@ -63,6 +63,7 @@ class Worker:
             genome.train()
         except tf.errors.ResourceExhaustedError as re:
             logging.error(f"failed to train a genome")
+            logging.error(str(re))
 
         requests.send_genome(self.comm, 0, genome)
 

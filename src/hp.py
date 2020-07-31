@@ -8,7 +8,7 @@ import numpy as np
 from dataset import Dataset
 
 
-L2_REGULARIZATION_WEIGHT: float         = 1e-7
+L2_REGULARIZATION_WEIGHT: float         = 1e-8
 PARAMETER_COUNT_PENALTY_WEIGHT: float   = 1e-8
 
 def get_regularizer():
@@ -35,7 +35,7 @@ def get_random_volume_depth(rng: np.random.Generator):
 
 
 # The higher this is the more vram that will be consumed
-__CNN_TRAINING_BATCH_SIZE = 100
+__CNN_TRAINING_BATCH_SIZE = 10
 def get_batch_size():
     return __CNN_TRAINING_BATCH_SIZE
 

@@ -55,7 +55,6 @@ class Master:
 
         if genome is None:
             logging.debug(f"terminating worker {source}")
-
             requests.send_terminate(self.comm, source)            
             self.terminates_sent += 1
         else:
