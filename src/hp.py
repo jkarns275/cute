@@ -126,9 +126,9 @@ copy_probability: float             = copy_rate / mutation_rate_sum
 
 
 # Probabilities for choosing the type of edge in the add_edge mutation
-add_conv_edge_probability: float    = 0.25 / 3
+add_conv_edge_probability: float    = 0.1 / 3
 add_separable_conv_edge_probability: float \
-                                    = 0.25 / 3
-add_pooling_edge_probability: float = 0.75
-add_dense_edge_probability: float   = 0.25 / 3
+                                    = 0.9
+add_pooling_edge_probability: float = 0.1 / 3
+add_dense_edge_probability: float   = 0.1 / 3
 

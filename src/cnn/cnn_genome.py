@@ -276,7 +276,10 @@ class CnnGenome:
         # Output layer cannot be an input layer, it is the final layer
         if type(input_layer) == OutputLayer:
             return False
-         
+        
+        if type(output_layer) == OutputLayer and ty != DenseEdge:
+            return None
+
         if input_layer.layer_innovation_number == output_layer.layer_innovation_number:
             return False
 
@@ -289,10 +292,6 @@ class CnnGenome:
                 if  edge.input_layer_in == input_layer.layer_innovation_number and \
                     edge.output_layer_in == output_layer.layer_innovation_number and \
                     type(edge) == ty:
-                    return False
-
-            if ty != DenseEdge:
-                if type(output_layer) == OutputLayer:
                     return False
 
         return True
@@ -797,6 +796,7 @@ class CnnGenome:
         # Construct tensorflow model
         model: keras.Model = self.create_model()
         logging.info(f"model has {model.count_params()} parameters")
+        model.summary()
 
         # set any epigenetic weights
         if self.epigenetic_weights:
@@ -818,7 +818,7 @@ class CnnGenome:
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
 
         # Check the fitness
-        fitness = history.history['val_loss'][-1]
+        fitness = 1.0 / history.history['val_categorical_accuracy'][-1]
         accuracy = history.history['val_categorical_accuracy'][-1]
 
         # set the fitness

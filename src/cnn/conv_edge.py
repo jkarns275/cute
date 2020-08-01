@@ -20,14 +20,13 @@ class ConvEdge(Edge):
        
         self.input_shape: Tuple[int, int, int] = layer_map[input_layer_in].output_shape
         self.output_shape: Tuple[int, int, int] = layer_map[output_layer_in].output_shape
-        
         super().__init__(edge_innovation_number, self.input_shape, self.output_shape, input_layer_in, output_layer_in, layer_map, enabled)
         
         filter_width, filter_height = \
                 calculate_required_filter_size(stride, *self.input_shape, *self.output_shape)
         assert filter_width > 0
         assert filter_height > 0
-
+        
         self.filter_width: int = filter_width
         self.filter_height: int = filter_height
         self.number_filters: int = self.output_shape[2]
