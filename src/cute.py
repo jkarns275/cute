@@ -9,6 +9,7 @@ from program_arguments import ProgramArguments
 from speciation_strategy import SpeciationStrategy
 from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
 from fitness_log import FitnessLog
+from dataset import Dataset
 import hp
 
 class Cute:
@@ -22,7 +23,8 @@ class Cute:
         self.output_directory: str = program_arguments.args.output_directory[0]
 
         self.fitness_log: FitnessLog = FitnessLog(self.output_directory)
-
+        
+        self.dataset: Dataset = hp. get_dataset()
         initial_genome: CnnGenome = self.generate_initial_genome()
  
         self.speciation_strategy: SpeciationStrategy = \
@@ -53,9 +55,9 @@ class Cute:
 
 
     def generate_initial_genome(self):
-        input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), 28, 28, 1)
+        input_layer: InputLayer = InputLayer(Layer.get_next_layer_innovation_number(), self.dataset.width, self.dataset.height, self.dataset.channels)
         hidden_layer: Layer = Layer(Layer.get_next_layer_innovation_number(), 8, 8, 16)
-        output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [128, 32], 10)
+        output_layer: OutputLayer = OutputLayer(Layer.get_next_layer_innovation_number(), [128, 32], self.dataset.classes)
 
         layer_map = make_layer_map([input_layer, hidden_layer, output_layer])
 
@@ -64,7 +66,7 @@ class Cute:
         edge_2: DenseEdge = DenseEdge(Edge.get_next_edge_innovation_number(), hidden_layer.layer_innovation_number,
                                         output_layer.layer_innovation_number, layer_map)
         
-        genome = CnnGenome(10, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set())
+        genome = CnnGenome(self.dataset.classes, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set())
       
         logging.info("performing some tests of CnnGenome::path_exists")
 

@@ -796,7 +796,6 @@ class CnnGenome:
         # Construct tensorflow model
         model: keras.Model = self.create_model()
         logging.info(f"model has {model.count_params()} parameters")
-        model.summary()
 
         # set any epigenetic weights
         if self.epigenetic_weights:
@@ -809,13 +808,22 @@ class CnnGenome:
                 # The layer was disabled
                 pass
 
-        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
-       
+        optimizer = keras.optimizers.Adam()
+        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+
         # loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
         # logging.info(f"calculated acc {acc}")
 
         # Train it for some set number of epochs
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
+        
+        # TODO: use this to have epigenetic optimizer weight inheritence
+        # for x in optimizer.get_weights():
+        #     print(type(x))
+        #     print(x)
+        # for x in optimizer.variables():
+        #     print(type(x))
+        #     print(x.name)
 
         # Check the fitness
         fitness = 1.0 / history.history['val_categorical_accuracy'][-1]
