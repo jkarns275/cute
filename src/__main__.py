@@ -53,6 +53,25 @@ def graph_genome_main(args: List[str]):
     )
 
 
+def get_genome_accuracy_main(args: List[str]):
+    gpu_fix()
+
+    genome_path = args[2]
+    dataset = args[3]
+
+    genome: CnnGenome = pickle.load(open(genome_path, 'rb'))
+    
+    dataset = Dataset.dataset_from_str(dataset)
+    hp.set_dataset(dataset)
+
+    model = genome.create_model()
+    model.compile(loss='categorical_crossentropy', optimizer='adam',
+              metrics=['accuracy'])
+    res = model.evaluate(dataset.x_train, dataset.y_train)
+
+    print(res)
+
+
 def make_example_genome():
     # The first argument to all layer and edge constructors is an innovation
     # number, hardcoded in this case
@@ -148,5 +167,7 @@ if __name__ == "__main__":
         train_genome_main(sys.argv)
     elif sys.argv[1] == "make_example_genome":
         make_example_genome()
+    elif sys.argv[1] == "evaluate_genome":
+        get_genome_accuracy_main(sys.argv)
     else:
         evo_main()

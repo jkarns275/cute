@@ -2,6 +2,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple, Set, Iterator, cast, Callable
 from itertools import product, chain
 
+import tensorflow as tf
 from tensorflow import keras
 import numpy as np
 
@@ -145,7 +146,7 @@ class CnnGenome:
     def __init__(self,  number_outputs: int, input_layer: InputLayer, output_layer: OutputLayer,
                         layer_map: Dict[int, Layer], conv_edges: List[ConvEdge], output_edges: List[DenseEdge],
                         epigenetic_weights: Dict[str, Any], disabled_layers: Set[int], disabled_edges: Set[int], 
-                        fitness: float=float('inf'), history: Optional[Any]=None, accuracy: float=-0.0):
+                        epigenetic_optimizer_weights: Any=None, fitness: float=float('inf'), history: Optional[Any]=None, accuracy: float=-0.0):
         # When this object is serialized the input and output layer in this map are copied so we need to make sure
         # we use the same object, otherwise layer_map[input_layer.layer_innovation_number] and input_layer will be
         # equal but different objects.
@@ -177,7 +178,10 @@ class CnnGenome:
 
         # Not sure what type the weights will be
         self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
-  
+        self.epigenetic_optimizer_weights: Any = epigenetic_optimizer_weights
+        if self.epigenetic_optimizer_weights is None:
+            self.epigenetic_optimizer_weights = {'variables': {}, 'iterations': 0}
+
         self.island: int = -1
         
 
@@ -206,7 +210,8 @@ class CnnGenome:
         # TODO: might be able to remove some of these copies
         return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges.copy(), output_edges.copy(),
                             epigenetic_weights=self.epigenetic_weights.copy(), disabled_layers=self.disabled_layers.copy(), 
-                            disabled_edges=self.disabled_edges.copy(), fitness=self.fitness, accuracy=self.accuracy, history=self.history)
+                            disabled_edges=self.disabled_edges.copy(), epigenetic_optimizer_weights=self.epigenetic_optimizer_weights,
+                            fitness=self.fitness, accuracy=self.accuracy, history=self.history)
 
 
     def __eq__(self, o: object) -> bool:
@@ -807,23 +812,52 @@ class CnnGenome:
             except ValueError as _ve:
                 # The layer was disabled
                 pass
-
+        
         optimizer = keras.optimizers.Adam()
-        model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+        loss_fn = tf.keras.losses.CategoricalCrossentropy()
+        model.compile(optimizer=optimizer, loss=loss_fn, metrics=['categorical_accuracy'])
+       
+        # Fake optimization so that the optimizers variables / weights will be created.
+        # Normally these are not created until after the training process
+        # This might be slow though, especially when using a GPU.
+
+        # Open a GradientTape.
+        with tf.GradientTape() as tape:
+            logits = model(tf.dtypes.cast(dataset.x_test[0:hp.get_batch_size()], tf.float32))
+            loss_value = loss_fn(dataset.y_test[0:hp.get_batch_size()], logits)
+            loss_value *= tf.constant(0.0) 
+
+        # Get gradients of loss wrt the weights.
+        gradients = tape.gradient(loss_value, model.trainable_weights)
+        # Update the weights of the model.
+        optimizer.apply_gradients(zip(gradients, model.trainable_weights))
+
+
+        if self.epigenetic_optimizer_weights:
+            epi_opt_variables = self.epigenetic_optimizer_weights['variables']
+            variables = optimizer.variables()
+            for name, variable in map(lambda v: (v.name, v), variables):
+                if name in epi_opt_variables:
+                    epi_var = epi_opt_variables[name]
+                    variable.assign(epi_var)
+
+            # ...
+            weights = optimizer.get_weights()
+            weights[0] *= 0
+            weights[0] += self.epigenetic_optimizer_weights['iterations']
+            optimizer.set_weights(weights)
 
         # loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
         # logging.info(f"calculated acc {acc}")
-
+        print(optimizer.variables().__len__())
         # Train it for some set number of epochs
         history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
+        print(optimizer.variables().__len__())
+        for variable in optimizer.variables():
+            name = variable.name
+            self.epigenetic_optimizer_weights['variables'][name] = variable
         
-        # TODO: use this to have epigenetic optimizer weight inheritence
-        # for x in optimizer.get_weights():
-        #     print(type(x))
-        #     print(x)
-        # for x in optimizer.variables():
-        #     print(type(x))
-        #     print(x.name)
+        self.epigenetic_optimizer_weights['iterations'] = optimizer.get_weights()[0]
 
         # Check the fitness
         fitness = 1.0 / history.history['val_categorical_accuracy'][-1]
@@ -842,7 +876,7 @@ class CnnGenome:
             weights = layer.get_weights()
             if weights:
                 new_weights[layer.name] = layer.get_weights()
-
+        
         self.epigenetic_weights.update(new_weights)
 
 
