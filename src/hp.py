@@ -29,13 +29,13 @@ def make_batch_norm_layer(name=None):
     return __CNN_BATCH_NORM_TYPE(name=name)
 
 
-__CNN_LAYER_VOLUME_DEPTHS = (4, 8, 16, 32, 64, 128, 256)
+__CNN_LAYER_VOLUME_DEPTHS = (4, 8, 16, 32)
 def get_random_volume_depth(rng: np.random.Generator):
     return __CNN_LAYER_VOLUME_DEPTHS[rng.integers(0, len(__CNN_LAYER_VOLUME_DEPTHS))]
 
 
 # The higher this is the more vram that will be consumed
-__CNN_TRAINING_BATCH_SIZE = 10
+__CNN_TRAINING_BATCH_SIZE = 20
 def get_batch_size():
     return __CNN_TRAINING_BATCH_SIZE
 

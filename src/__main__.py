@@ -4,7 +4,7 @@ import pickle
 import logging
 from typing import List
 # This hides tensorflow debug output
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # or any {'0', '1', '2'}
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'  # or any {'0', '1', '2'}
 
 from mpi4py import MPI
 import tensorflow as tf
@@ -17,21 +17,28 @@ from worker import Worker
 from dataset import Dataset
 from program_arguments import ProgramArguments
 
-def gpu_fix():
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        try:
-            # Currently, memory growth needs to be the same across GPUs
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-        except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
-            print(e)
+def gpu_fix(ram_in_mb):
+    # This seems to fix a bug where processes would hang when an OOM error occurred.
+    gpus = list(filter(lambda device: "GPU" in device.name and "XLA" not in device.name, tf.config.list_physical_devices()))
+    tf.config.set_visible_devices(gpus, "GPU")
+    tf.config.set_logical_device_configuration(gpus[0],
+            [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
+    tf.config.set_logical_device_configuration(gpus[1],
+            [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
+
+#     if gpus:
+#         try:
+#             # Currently, memory growth needs to be the same across GPUs
+#             for gpu in gpus:
+#                 tf.config.experimental.set_memory_growth(gpu, True)
+#             logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+#         except RuntimeError as e:
+#             # Memory growth must be set before GPUs have been initialized
+#             print(e)
 
 
 def graph_genome_main(args: List[str]):
-    gpu_fix()
+    gpu_fix(1024)
     
     genome_path = args[2]
     image_dst = args[3]
@@ -109,7 +116,7 @@ def make_example_genome():
 
 
 def train_genome_main(args: List[str]):
-    gpu_fix()
+    gpu_fix(1024)
     hp.set_dataset(Dataset.make_mnist_dataset())
     genome_path = args[2]
     
@@ -126,7 +133,7 @@ def evo_main():
     
     pa = ProgramArguments(rank)
     
-    gpu_fix()
+    gpu_fix(pa.args.gpu_ram)
 
     if rank == 0:
         max_rank: int = comm.Get_size()
