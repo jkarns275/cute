@@ -71,7 +71,11 @@ class Dataset:
     @staticmethod
     def dataset_from_arguments(program_arguments: 'ProgramArguments'):
         dataset_str = program_arguments.args.dataset
+        return Dataset.dataset_from_str(dataset_str)
 
+
+    @staticmethod
+    def dataset_from_str(dataset_str: str):
         if dataset_str == "mnist":
             return Dataset.make_mnist_dataset()
         elif dataset_str == "mnist_debug":

@@ -50,7 +50,8 @@ class Edge:
 
 
     def __setstate__(self, state):
-        # Not sure if this is necessary but just make  
+        # Not sure if this is necessary but just make 
+        state.update({'enabled': True})
         self.__dict__.update(state)
         self.tf_layer = None
     

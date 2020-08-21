@@ -100,7 +100,7 @@ class Layer:
         self.validate_tf_inputs(input_layers)
         
         if len(input_layers) > 1:
-            self.tf_layer = keras.layers.Average()(input_layers)
+            self.tf_layer = keras.layers.Add()(input_layers)
         else:
             self.tf_layer = input_layers[0]
 

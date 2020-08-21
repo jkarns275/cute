@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional, List
 
 # This file contains all of the hyper parameters.
 import tensorflow as tf
@@ -7,6 +7,11 @@ import numpy as np
 
 from dataset import Dataset
 
+class EvolvableHPs:
+
+    def __init__(self, parents: Optional[List['EvolvableHPs']]=None):
+        if parents is not None:
+            pass
 
 L2_REGULARIZATION_WEIGHT: float         = 1e-8
 PARAMETER_COUNT_PENALTY_WEIGHT: float   = 1e-8
