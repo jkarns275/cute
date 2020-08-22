@@ -38,7 +38,9 @@ class ProgramArguments(argparse.ArgumentParser):
         self.add_argument('-l2', '--l2_weight', metavar='l2_weight', action='store', default=None, type=float,
                 help='the weight to scale L2 loss by when calculating model loss')
         self.add_argument('-sf', '--slurm_fix', metavar='slurm_fix', action='store', default=0, type=int, help='whether or not to apply a fix that ensures only a single gpu is visible to each MPI process')
-
+        self.add_argument('-gr', '--gpu_ram', metavar='gpu_ram', action='store', default=1024, type=float,
+                help='the amount of ram to allocate for logical GPU devices, in MB')
+        
         self.args = self.parse_args()
 
         self.set_dataset()
@@ -67,14 +69,8 @@ class ProgramArguments(argparse.ArgumentParser):
     
 
     def set_slurm_fix(self):
-        if self.args.slurm_fix and not self.args.ignore_gpus:
-            visible_gpus_str = os.environ['CUDA_VISIBLE_DEVICES']
-            print(visible_gpus_str)
-            split = visible_gpus.split(',')
-            divisor = len(split)
-            visible_gpus = list(map(int, split))
-            os.environ['CUDA_VISIBLE_DEVICES'] = f"{visible_gpus[self.rank % divisor]}"
-            print(os.environ['CUDA_VISIBLE_DEVICES'])
+        pass
+
 
     def set_ignore_gpus(self):
         if self.args.ignore_gpus:
