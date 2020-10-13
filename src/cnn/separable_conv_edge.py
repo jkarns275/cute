@@ -11,6 +11,7 @@ from cnn.edge import Edge
 
 if False:
     from cnn.layer import Layer
+    from cnn import CnnGenome
 
 
 class SeparableConvEdge(ConvEdge):
@@ -29,7 +30,7 @@ class SeparableConvEdge(ConvEdge):
         return f"factorized_conv_edge_inov_n_{self.edge_innovation_number}"
     
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[tf.Tensor]:
+    def get_tf_layer(self, genome: 'CnnGenome') -> Optional[tf.Tensor]:
         if self.is_disabled():
             return None
 
@@ -37,7 +38,7 @@ class SeparableConvEdge(ConvEdge):
             return self.tf_layer
         
         maybe_input_tf_layer: Optional[tf.Tensor] = \
-                layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
+                genome.layer_map[self.input_layer_in].get_tf_layer(genome)
         
         if maybe_input_tf_layer is None:
             return None
@@ -51,8 +52,8 @@ class SeparableConvEdge(ConvEdge):
                         (self.filter_width, self.filter_height),
                         strides=(self.stride, self.stride),
                         activation='linear',
-                        kernel_regularizer=get_regularizer(),
-                        bias_regularizer=get_regularizer(),
+                        kernel_regularizer=get_regularizer(genome.hp),
+                        bias_regularizer=get_regularizer(genome.hp),
                         input_shape=self.input_shape,
                         name=self.get_name() + "_" + str(self.filter_height) + "x1")(input_tf_layer)
         

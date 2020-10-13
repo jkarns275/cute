@@ -5,7 +5,8 @@ import tensorflow.keras as keras
 import tensorflow as tf
 
 from cnn.edge import Edge
-
+if False:
+    from cnn import CnnGenome
 
 class Layer:
 
@@ -38,6 +39,7 @@ class Layer:
         self.outputs: Set[int] = outputs.copy()
 
         self.tf_layer: Optional[tf.Tensor] = None
+        self.tf_weight_names: Set[str] = set()
 
 
     def __getstate__(self):
@@ -83,14 +85,22 @@ class Layer:
         self.outputs = set()
 
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[keras.layers.Layer]:
+    def get_tf_layer(self, genome: 'CnnGenome') -> Optional[keras.layers.Layer]:
+        """
+        A description of how this method works to construct a complete TensorFlow computation graph can be found
+        in the documentation for the CnnGenome::create_model.
+        
+        Returns None if this is disabled or if all of the input edges get_tf_layer calls return None.
+        Otherwise returns a tensor which represents a concatenation of all of the tensors (they all have the same size).
+        """
+
         if self.tf_layer is not None:
             return self.tf_layer
         
         if not self.enabled:
             return None
         
-        maybe_input_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        maybe_input_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: genome.edge_map[edge_in].get_tf_layer(genome), self.inputs))
         input_layers: List[tf.Tensor] = [x for x in maybe_input_layers if x is not None]
             
         # There are no inputs return None

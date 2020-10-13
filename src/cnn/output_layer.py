@@ -7,7 +7,8 @@ import tensorflow as tf
 from hp import make_activation_layer, make_classification_layer, get_regularizer
 from cnn.edge import Edge
 from cnn.layer import Layer
-
+if False:
+    from cnn import CnnGenome
 
 class OutputLayer(Layer):
     """
@@ -33,12 +34,22 @@ class OutputLayer(Layer):
         self.layer_innovation_number: int = layer_innovation_number
         self.number_classes: int = number_classes
         self.dense_layers: List[int] = dense_layers + [number_classes]
+        self.tf_weight_names: Set[str] = set()
 
     
     def copy(self) -> 'OutputLayer':
         return OutputLayer( self.layer_innovation_number, self.dense_layers[:-1], self.number_classes, 
                             inputs=self.inputs, outputs=self.outputs)
 
+
+    def get_tf_weight_names(self) -> Set[str]:
+        weight_names = set()
+        name = self.get_name()
+
+        for i, size in enumerate(self.dense_layers):
+            weight_names.add(f"{name}_{i}")
+        
+        return weight_names
 
     def set_enabled(self, enabled: bool):
         self.enabled = True
@@ -56,7 +67,17 @@ class OutputLayer(Layer):
         return f"output_layer_inov_n_{self.layer_innovation_number}"
 
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+    def get_tf_layer(self, genome: 'CnnGenome') -> keras.layers.Layer:
+        """
+        A description of how this method works to construct a complete TensorFlow computation graph can be found
+        in the documentation for the CnnGenome::create_model.
+        
+        This should never return None. Takes all of the tensors from DenseEdges and adds them together, then pushes
+        them through an activation function. Then adds a series of fully connected layers then the classification layer.
+        Returns this as a Tensor of course.
+        """
+
+
         if self.tf_layer is not None:
             return self.tf_layer
         
@@ -64,7 +85,7 @@ class OutputLayer(Layer):
         # layers without activation functions, and add the resulting layers together and then apply
         # an activation function.
         # So these intermediate layers shouldn't have an activation function
-        maybe_intermediate_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: edge_map[edge_in].get_tf_layer(layer_map, edge_map), self.inputs))
+        maybe_intermediate_layers: List[Optional[tf.Tensor]] = list(map(lambda edge_in: genome.edge_map[edge_in].get_tf_layer(genome), self.inputs))
         
         # filter out nones
         intermediate_layers: List[tf.Tensor] = [x for x in maybe_intermediate_layers if x is not None]
@@ -94,8 +115,8 @@ class OutputLayer(Layer):
                             size,
                             input_shape=shape,
                             activation='linear',
-                            kernel_regularizer=get_regularizer(),
-                            bias_regularizer=get_regularizer(),
+                            kernel_regularizer=get_regularizer(genome.hp),
+                            bias_regularizer=get_regularizer(genome.hp),
                             name=self.get_name() + f"_{i}")(layer)
 
             if i == len(self.dense_layers) - 1:

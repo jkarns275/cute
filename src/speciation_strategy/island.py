@@ -1,6 +1,6 @@
 import math
 import logging
-from typing import List
+from typing import List, cast
 
 import numpy as np
 
@@ -23,13 +23,14 @@ class Island:
             return None, 0
         elif self.population[-1].fitness > genome.fitness:
             # Search for clones and only insert 
-            clone_index, clone = None, None
+            clone_index, clone_option = None, None
             for i, other_genome in enumerate(self.population):
                 if genome == other_genome:
-                    clone_index, clone = i, other_genome
+                    clone_index, clone_option = i, other_genome
                     break
 
             if clone_index is not None:
+                clone: CnnGenome = cast(CnnGenome, clone_option)
                 # if the clone is worse remove it, otherwise don't insert this genome since it is worse
                 if clone.fitness > genome.fitness:
                     self.population.pop(clone_index)

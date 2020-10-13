@@ -128,10 +128,16 @@ class CnnGenome:
         input_layer: InputLayer = cast(InputLayer, layer_map[parents[0].input_layer.layer_innovation_number])
         output_layer: OutputLayer = cast(OutputLayer, layer_map[parents[0].output_layer.layer_innovation_number])
          
+        epigenetic_optimizer_weights = parents[0].epigenetic_optimizer_weights.copy()
+        epigenetic_optimizer_weights.update(parents[1].epigenetic_optimizer_weights)
+    
+        # hpc = hp.EvolvableHPConfig(list(map(lambda p: p.hp, parents)), rng)
+        hpc = parents[0].hp
+
         # For now use default fitness, history, and accuracy
         # Maybe we'll want to use the ones from the parent genome
         child = CnnGenome(  number_outputs, input_layer, output_layer, layer_map, conv_edges, output_edges,
-                            epigenetic_weights, disabled_layers, disabled_edges)
+                            epigenetic_weights, disabled_layers, disabled_edges, hpc)
 
         if child.path_exists(child.input_layer, child.output_layer, False):
             logging.info("crossover succeeded!")
@@ -146,7 +152,8 @@ class CnnGenome:
     def __init__(self,  number_outputs: int, input_layer: InputLayer, output_layer: OutputLayer,
                         layer_map: Dict[int, Layer], conv_edges: List[ConvEdge], output_edges: List[DenseEdge],
                         epigenetic_weights: Dict[str, Any], disabled_layers: Set[int], disabled_edges: Set[int], 
-                        epigenetic_optimizer_weights: Any=None, fitness: float=float('inf'), history: Optional[Any]=None, accuracy: float=-0.0):
+                        hp: hp.EvolvableHPConfig, epigenetic_optimizer_weights: Any=None, 
+                        fitness: float=float('inf'), history: Optional[Any]=None, accuracy: float=-0.0):
         # When this object is serialized the input and output layer in this map are copied so we need to make sure
         # we use the same object, otherwise layer_map[input_layer.layer_innovation_number] and input_layer will be
         # equal but different objects.
@@ -175,6 +182,8 @@ class CnnGenome:
         self.fitness: float = fitness
         self.accuracy: float = accuracy 
         self.history: Optional[Any] = history
+
+        self.hp = hp
 
         # Not sure what type the weights will be
         self.epigenetic_weights: Dict[str, Any] = epigenetic_weights
@@ -210,12 +219,13 @@ class CnnGenome:
         # TODO: might be able to remove some of these copies
         return CnnGenome(   self.number_outputs, input_layer, output_layer, layer_map, conv_edges.copy(), output_edges.copy(),
                             epigenetic_weights=self.epigenetic_weights.copy(), disabled_layers=self.disabled_layers.copy(), 
-                            disabled_edges=self.disabled_edges.copy(), epigenetic_optimizer_weights=self.epigenetic_optimizer_weights,
+                            disabled_edges=self.disabled_edges.copy(), hp=self.hp, epigenetic_optimizer_weights=self.epigenetic_optimizer_weights,
                             fitness=self.fitness, accuracy=self.accuracy, history=self.history)
 
 
-    def __eq__(self, o: object) -> bool:
-        if type(o) == CnnGenome:
+    def __eq__(self, x: object) -> bool:
+        if type(x) == CnnGenome:
+            o: CnnGenome = cast(CnnGenome, x)
             if self.disabled_edges != o.disabled_edges:
                 return False
             elif self.disabled_layers != o.disabled_layers:
@@ -389,9 +399,7 @@ class CnnGenome:
 
     def try_make_new_dense_edge(self, input_layer: Layer, rng: np.random.Generator) -> Optional[Edge]:
         """
-        Attempts to make a new edge but will return None if creating the new edge would lead
-        to an invalid neural network graph (i.e. there is a cycle).
-        The stride is randomly selected from all possible strides (unless a DenseEdge is created, which has no stride).
+        Attempts to create a new DenseEdge, which connects a random  layer to the output layer. 
         """
         output_layer = self.output_layer
         if not self.valid_connection(input_layer, output_layer, DenseEdge):
@@ -783,8 +791,25 @@ class CnnGenome:
 
 
     def create_model(self):
-        input_layer = self.input_layer.get_tf_layer(self.layer_map, self.edge_map)
-        output_layer = self.output_layer.get_tf_layer(self.layer_map, self.edge_map)
+        """
+        Turns this object into a Tensor (like a computation graph sort of).
+        If this edge doesn't recieve any information from the input layer due to a disabled edge, this edge
+        is also effectively disabled and won't appear in the resulting network.
+
+        The way get_tf_layer constructs a complete computation graph is done recursively back to front.
+        A call to get_tf_layer is made to the final output layer, which then calls get_tf_layer on all enabled input_edges.
+        Those input edges call get_tf_layer on their input layers, and so on and so forth. 
+        Any disabled edges or layers will return None, which will be filtered out. If all input layers / edges
+        are filtered out due to Nones being returned, a None will also be returned. This is how components that 
+        recive no information from the input layer are removed from the final TensorFlow graph.
+        Components that don't recieve send any information to the output layer due to a disabled link or otherwise
+        aren't included in the resulting network because the get_tf_layer will never be called on that component,
+        since the recursive call of get_tf_layer will not occur at the disabled component.
+
+        Hopefully this makes sense.
+        """
+        input_layer = self.input_layer.get_tf_layer(self)
+        output_layer = self.output_layer.get_tf_layer(self)
         
         model = keras.Model(inputs=input_layer, outputs=output_layer)
         return model
@@ -849,10 +874,8 @@ class CnnGenome:
 
         # loss, acc = model.evaluate(dataset.x_test, dataset.y_test, verbose=0)
         # logging.info(f"calculated acc {acc}")
-        print(optimizer.variables().__len__())
         # Train it for some set number of epochs
-        history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
-        print(optimizer.variables().__len__())
+        history = model.fit(dataset.x_train, dataset.y_train, batch_size=hp.get_batch_size(), epochs=hp.get_number_epochs(self.hp), validation_data=(dataset.x_test, dataset.y_test), verbose=0)
         for variable in optimizer.variables():
             name = variable.name
             self.epigenetic_optimizer_weights['variables'][name] = variable
@@ -876,6 +899,7 @@ class CnnGenome:
             weights = layer.get_weights()
             if weights:
                 new_weights[layer.name] = layer.get_weights()
+                print(layer.name)
         
         self.epigenetic_weights.update(new_weights)
 

@@ -18,13 +18,14 @@ from dataset import Dataset
 from program_arguments import ProgramArguments
 
 def gpu_fix(ram_in_mb):
+    pass
     # This seems to fix a bug where processes would hang when an OOM error occurred.
-    gpus = list(filter(lambda device: "GPU" in device.name and "XLA" not in device.name, tf.config.list_physical_devices()))
-    tf.config.set_visible_devices(gpus, "GPU")
-    tf.config.set_logical_device_configuration(gpus[0],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
-    tf.config.set_logical_device_configuration(gpus[1],
-            [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
+    # gpus = list(filter(lambda device: "GPU" in device.name and "XLA" not in device.name, tf.config.list_physical_devices()))
+    # tf.config.set_visible_devices(gpus, "GPU")
+    # tf.config.set_logical_device_configuration(gpus[0],
+    #         [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
+    # tf.config.set_logical_device_configuration(gpus[1],
+    #         [tf.config.LogicalDeviceConfiguration(memory_limit=ram_in_mb)])
 
 #     if gpus:
 #         try:
@@ -61,20 +62,20 @@ def graph_genome_main(args: List[str]):
 
 
 def get_genome_accuracy_main(args: List[str]):
-    gpu_fix()
+    gpu_fix(4000)
 
     genome_path = args[2]
     dataset = args[3]
 
     genome: CnnGenome = pickle.load(open(genome_path, 'rb'))
     
-    dataset = Dataset.dataset_from_str(dataset)
+    data = Dataset.dataset_from_str(dataset)
     hp.set_dataset(dataset)
 
     model = genome.create_model()
     model.compile(loss='categorical_crossentropy', optimizer='adam',
               metrics=['accuracy'])
-    res = model.evaluate(dataset.x_train, dataset.y_train)
+    res = model.evaluate(data.x_train, data.y_train)
 
     print(res)
 

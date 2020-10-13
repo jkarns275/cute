@@ -1,12 +1,12 @@
 import logging
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Set
 
 import tensorflow.keras as keras
 import tensorflow as tf
 
 if False:
     from cnn.layer import Layer
-
+    from cnn import CnnGenome
 
 class Edge:
 
@@ -31,7 +31,8 @@ class Edge:
         self.output_shape: Tuple[int, int, int] = output_shape
         
         self.tf_layer: Optional[tf.Tensor] = None
-        
+        self.tf_weight_names: Set[str] = set()
+
         self.enabled: bool = enabled
 
         layer_map[output_layer_in].add_input_edge(self)
@@ -76,5 +77,5 @@ class Edge:
         self.enabled = False
 
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, 'Edge']) -> keras.layers.Layer:
+    def get_tf_layer(self, genome: 'CnnGenome') -> keras.layers.Layer:
         raise NotImplementedError("Call to abstract method Edge::get_tf_layer")

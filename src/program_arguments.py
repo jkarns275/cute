@@ -14,12 +14,12 @@ class ProgramArguments(argparse.ArgumentParser):
         super().__init__(description='Cnns through asynchronoUs Training and Evolution (cute) for TensorFlow', add_help=True)
 
         self.rank: int = rank
-        self.dataset: str = None
-        self.output_directory: str = None
-        self.number_islands: int = None
-        self.population_size: int = None
-        self.max_genomes: int = None
-        self.backprop_iterations: int = None
+        self.dataset: str = ""
+        self.output_directory: str = ""
+        self.number_islands: int = -1
+        self.population_size: int = -1
+        self.max_genomes: int = -1
+        self.backprop_iterations: int = -1
 
         self.add_argument('dataset', metavar='dataset', type=str, nargs=1,
                             help='the image dataset to be used, select one from the available datasets here: https://www.tensorflow.org/datasets/catalog/overview')
@@ -37,6 +37,8 @@ class ProgramArguments(argparse.ArgumentParser):
                 default=0, type=int, help='whether or not to ignore gpus. if set cpus will be used instead')
         self.add_argument('-l2', '--l2_weight', metavar='l2_weight', action='store', default=None, type=float,
                 help='the weight to scale L2 loss by when calculating model loss')
+        self.add_argument('-wi', '--weight_initialization', metavar='weight_init', action='store', default='kaiming',
+                type=str, help='the method by which weights will be initialized in a network. Valid options are kaiming, xavier / glorot, and epigenetic / epi')
         self.add_argument('-sf', '--slurm_fix', metavar='slurm_fix', action='store', default=0, type=int, help='whether or not to apply a fix that ensures only a single gpu is visible to each MPI process')
         self.add_argument('-gr', '--gpu_ram', metavar='gpu_ram', action='store', default=1024, type=float,
                 help='the amount of ram to allocate for logical GPU devices, in MB')
@@ -47,6 +49,12 @@ class ProgramArguments(argparse.ArgumentParser):
         self.set_number_epochs()
         self.set_slurm_fix()
         self.set_ignore_gpus()
+        self.set_weight_initialization()
+    
+
+    def set_weight_initialization(self):
+        hp.set_weight_initialization()
+
 
     def set_number_epochs(self):
         hp.set_number_epochs(self.args.backprop_iterations)

@@ -36,5 +36,5 @@ class SpeciationStrategy:
         raise Exception("called abstract get_best_genome")
 
 
-    def generate_genome(self, cute: 'Cute'):
-        raise Exception("called abstract generate_genome")
+    def get_genome_for_mutation(self, cute: 'Cute'):
+        raise Exception("called abstract get_genome_for_mutation")

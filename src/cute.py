@@ -24,6 +24,8 @@ class Cute:
 
         self.fitness_log: FitnessLog = FitnessLog(self.output_directory)
         
+        self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
+        
         self.dataset: Dataset = hp. get_dataset()
         initial_genome: CnnGenome = self.generate_initial_genome()
  
@@ -50,7 +52,6 @@ class Cute:
             self.mutation_functions.append(mutation_function)
             self.mutation_probabilities.append(probability)
 
-        self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
         _warmup = self.rng.random(1000)
 
 
@@ -65,8 +66,8 @@ class Cute:
                                     hidden_layer.layer_innovation_number, layer_map)
         edge_2: DenseEdge = DenseEdge(Edge.get_next_edge_innovation_number(), hidden_layer.layer_innovation_number,
                                         output_layer.layer_innovation_number, layer_map)
-        
-        genome = CnnGenome(self.dataset.classes, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set())
+        hpc = hp.EvolvableHPConfig([], self.rng)
+        genome = CnnGenome(self.dataset.classes, input_layer, output_layer, layer_map, [edge_1], [edge_2], {}, set(), set(), hpc)
       
         logging.info("performing some tests of CnnGenome::path_exists")
 
@@ -114,8 +115,16 @@ class Cute:
                     return child
         else:
             # Grab genome from speciation strategy
-            genome: CnnGenome = self.speciation_strategy.generate_genome(self.rng)
+            genome = self.speciation_strategy.get_genome_for_mutation(self.rng)
+            hp_parents = self.speciation_strategy.get_hp_parents(genome.island, self.rng)
             
+            if self.speciation_strategy.get_generated_genomes() > hp.HP_WARM_UP_GENOMES:
+                hpc = hp.EvolvableHPConfig(list(map(lambda genome: genome.hp, hp_parents)), self.rng)
+            else:
+                hpc = hp.EvolvableHPConfig([], self.rng)
+
+            genome.hp = hpc
+
             # Keep trying random mutations until one succeeds
             while True:
                 mutation_function = self.rng.choice(self.mutation_functions, 1, p=self.mutation_probabilities)[0]

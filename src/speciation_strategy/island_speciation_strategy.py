@@ -159,24 +159,27 @@ class IslandSpeciationStrategy(SpeciationStrategy):
             return (population[i0], population[i1])
 
 
-    def generate_genome(self, rng: np.random.Generator):
+    def get_genome_for_mutation(self, rng: np.random.Generator):
         island_turn = self.next_island_turn()
         
-        if self.inserted_genomes == 0:
-            genome = self.initial_genome.copy()
-            genome.island = island_turn
-            return genome
+        # This should only happen during the beginning of the program
+        if self.islands[island_turn].is_empty():
+            genome = self.initial_genome
         else:
+            genome = self.islands[island_turn].get_random_genome(rng)
             
-            # This should only happen during the beginning of the program
-            if self.islands[island_turn].is_empty():
-                genome = self.initial_genome
-            else:
-                genome = self.islands[island_turn].get_random_genome(rng)
-                
-            genome.island = island_turn
-            
-            genome = genome.copy()
+        genome.island = island_turn
+        
+        genome = genome.copy()
 
-            return genome
+        return genome
+
+
+    def get_hp_parents(self, island_index: int, rng: np.random.Generator):
+        island = self.islands[island_index]
+
+        if len(island.population) < 2:
+            return []
+        else:
+            return island.population
 

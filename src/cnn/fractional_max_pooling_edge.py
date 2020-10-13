@@ -1,5 +1,5 @@
 import logging
-from typing import List, Tuple, Optional, Dict, cast
+from typing import List, Tuple, Optional, Dict, Any, cast
 
 import tensorflow.keras as keras
 import tensorflow as tf
@@ -11,7 +11,7 @@ from cnn.edge import Edge
 
 if False:
     from cnn.layer import Layer
-
+    from cnn import CnnGenome
 
 class FractionalMaxPoolingEdge(ConvEdge):
 
@@ -46,7 +46,15 @@ class FractionalMaxPoolingEdge(ConvEdge):
         return f"fractional_max_pooling_inov_n_{self.edge_innovation_number}"
     
 
-    def get_tf_layer(self, layer_map: Dict[int, 'Layer'], edge_map: Dict[int, Edge]) -> Optional[tf.Tensor]:
+    def get_tf_layer(self, genome: 'CnnGenome') -> Optional[tf.Tensor]:
+        """
+        A description of how this method works to construct a complete TensorFlow computation graph can be found
+        in the documentation for the CnnGenome::create_model.
+        
+        Returns None if this is disabled or if the input layer get_tf_layer returns None.
+        Otherwise returns a Tensor representing a fractional max pooling operation, followed by some padding if necessary.
+        
+        """
         if self.is_disabled():
             return None
 
@@ -54,7 +62,7 @@ class FractionalMaxPoolingEdge(ConvEdge):
             return self.tf_layer
         
         maybe_input_tf_layer: Optional[tf.Tensor] = \
-                layer_map[self.input_layer_in].get_tf_layer(layer_map, edge_map)
+                genome.layer_map[self.input_layer_in].get_tf_layer(genome)
         
         if maybe_input_tf_layer is None:
             return None
@@ -68,7 +76,7 @@ class FractionalMaxPoolingEdge(ConvEdge):
             mp = tf.nn.fractional_max_pool(x, [1., self.input_shape[0] / self.output_shape[0], self.input_shape[1] / self.output_shape[1], 1.])
             return mp.output
 
-        self.tf_layer = keras.layers.Lambda(lambda x: max_pool(x), name=self.get_name())(input_tf_layer)
+        self.tf_layer: Any = keras.layers.Lambda(lambda x: max_pool(x), name=self.get_name())(input_tf_layer)
         # So sometimes this size is incorrect due to a rounding error, for now i am just going to pad it.
         # TODO: Fix this / try different alphas until it is correct
         if self.tf_layer.shape[1:3] != self.output_shape[:2]:

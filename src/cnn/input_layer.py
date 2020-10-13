@@ -8,7 +8,8 @@ import hp
 from cnn.conv_edge import ConvEdge
 from cnn.layer import Layer
 from cnn.edge import Edge
-
+if False:
+    from cnn import CnnGenome
 
 class InputLayer(Layer):
 
@@ -24,9 +25,6 @@ class InputLayer(Layer):
         return InputLayer(self.layer_innovation_number, self.width, self.height, self.number_channels)
     
 
-    
-
-
     def set_enabled(self, enabled: bool):
         if not enabled:
             raise RuntimeError("cannot set the input layer to be disabled")
@@ -41,7 +39,13 @@ class InputLayer(Layer):
         raise RuntimeError("you cannot add an input to the input layer!")
 
 
-    def get_tf_layer(self, layer_map: Dict[int, Layer], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+    def get_tf_layer(self, genome: 'CnnGenome') -> keras.layers.Layer:
+        """
+        A description of how this method works to construct a complete TensorFlow computation graph can be found
+        in the documentation for the CnnGenome::create_model.
+        
+        Returns the input layer with the specified shape.
+        """
         if self.tf_layer is not None:
             return self.tf_layer
 

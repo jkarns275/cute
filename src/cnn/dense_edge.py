@@ -9,7 +9,8 @@ from cnn.edge import Edge
 from cnn.layer import Layer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.output_layer import OutputLayer
-
+if False:
+    from cnn import CnnGenome
 
 class DenseEdge(Edge):
 
@@ -23,6 +24,7 @@ class DenseEdge(Edge):
                             input_layer_in, output_layer_in, layer_map, enabled)
         
         self.tf_layer: Optional[tf.Tensor] = None
+        self.tf_weight_names = {self.get_name()}
         assert type(layer_map[output_layer_in]) == OutputLayer
        
 
@@ -42,19 +44,28 @@ class DenseEdge(Edge):
         return f"dense_edge_inov_n_{self.edge_innovation_number}"
 
 
-    def get_tf_layer(self, layer_map: Dict[int, Layer], edge_map: Dict[int, Edge]) -> keras.layers.Layer:
+    def get_tf_layer(self, genome: 'CnnGenome') -> keras.layers.Layer:
+        """
+        A description of how this method works to construct a complete TensorFlow computation graph can be found
+        in the documentation for the CnnGenome::create_model.
+        
+        Returns None if this is disabled or if the input layer get_tf_layer returns None.
+        Otherwise returns a Tensor which flattens the input volume then fully connects that to a dense layer, with no activation function.
+        The activation function is done in the OutputLayer. 
+
+        """
         if self.is_disabled():
             return None
 
         if self.tf_layer is not None:
             return self.tf_layer
          
-        input_layer: Layer = layer_map[self.input_layer_in]
-        output_layer: OutputLayer = cast(OutputLayer, layer_map[self.output_layer_in])
+        input_layer: Layer = genome.layer_map[self.input_layer_in]
+        output_layer: OutputLayer = cast(OutputLayer, genome.layer_map[self.output_layer_in])
 
         assert type(output_layer) == OutputLayer
 
-        maybe_input_tf_layer: Optional[tf.Tensor] = input_layer.get_tf_layer(layer_map, edge_map)
+        maybe_input_tf_layer: Optional[tf.Tensor] = input_layer.get_tf_layer(genome)
         
         if maybe_input_tf_layer is None:
             return None
@@ -76,8 +87,8 @@ class DenseEdge(Edge):
             keras.layers.Dense( number_units, 
                                 input_shape=(shape,),
                                 activation='linear',
-                                kernel_regularizer=get_regularizer(),
-                                bias_regularizer=get_regularizer(),
+                                kernel_regularizer=get_regularizer(genome.hp),
+                                bias_regularizer=get_regularizer(genome.hp),
                                 name=self.get_name())(flattened)
         
         self.tf_layer = dense
