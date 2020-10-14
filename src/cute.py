@@ -9,6 +9,7 @@ from program_arguments import ProgramArguments
 from speciation_strategy import SpeciationStrategy
 from speciation_strategy.island_speciation_strategy import IslandSpeciationStrategy
 from fitness_log import FitnessLog
+from hp_log import HPLog
 from dataset import Dataset
 import hp
 
@@ -23,7 +24,8 @@ class Cute:
         self.output_directory: str = program_arguments.args.output_directory[0]
 
         self.fitness_log: FitnessLog = FitnessLog(self.output_directory)
-        
+        self.hp_log: HPLog = HPLog(self.output_directory)
+
         self.rng: np.random.Generator = np.random.Generator(np.random.PCG64(int(str(time.time()).split('.')[1])))
         
         self.dataset: Dataset = hp. get_dataset()
@@ -168,6 +170,7 @@ class Cute:
                   "                                                       '                     \n")
 
         self.fitness_log.update_log(self)
+        self.hp_log.update_log(self)
 
 
     def mutate(self, n_mutations: int, genome: CnnGenome):

@@ -11,7 +11,7 @@ if False:
 
 class EvolvableHP:
 
-    WEIGHT_MAX = 2.0
+    WEIGHT_MAX = 1.5
 
     def __init__(self, min, max, init_min, init_max, type=float):
         self.min = min
@@ -44,7 +44,9 @@ class EvolvableHP:
         return self.type(value)
 
 # how many genomes to generate before we start actually doing HP crossover, before that we just use random HPs
-HP_WARM_UP_GENOMES: int = 40
+HP_WARM_UP_GENOMES: int = 100
+# Probability that the HPs will be random, after the warm up period
+RANDOM_PROBABILITY: int = 0.1
 class EvolvableHPConfig:
     
 
@@ -68,7 +70,6 @@ class EvolvableHPConfig:
         else:
             # Need 2 or more for the simplex
             assert len(parents) > 1
-            print(f"Best: {parents[0]}")
             for name, hp in EvolvableHPConfig.PARAMETERS.items():
                 best_hp = getattr(parents[0], name)
                 other_hps = list(map(lambda parent: getattr(parent, name), parents[1:]))

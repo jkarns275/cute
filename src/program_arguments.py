@@ -53,7 +53,7 @@ class ProgramArguments(argparse.ArgumentParser):
     
 
     def set_weight_initialization(self):
-        hp.set_weight_initialization()
+        hp.set_weight_initialization(self.args.weight_initialization)
 
 
     def set_number_epochs(self):

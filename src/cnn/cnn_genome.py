@@ -899,7 +899,6 @@ class CnnGenome:
             weights = layer.get_weights()
             if weights:
                 new_weights[layer.name] = layer.get_weights()
-                print(layer.name)
         
         self.epigenetic_weights.update(new_weights)
 
