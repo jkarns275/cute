@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, cast
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer, make_batch_norm_layer, get_regularizer
+from hp import make_activation_layer, make_batch_norm_layer, get_regularizer, get_weight_initialization
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.conv_edge import ConvEdge
 from cnn.edge import Edge
@@ -54,6 +54,7 @@ class SeparableConvEdge(ConvEdge):
                         activation='linear',
                         kernel_regularizer=get_regularizer(genome.hp),
                         bias_regularizer=get_regularizer(genome.hp),
+                        kernel_initializer=get_weight_initialization(genome),
                         input_shape=self.input_shape,
                         name=self.get_name() + "_" + str(self.filter_height) + "x1")(input_tf_layer)
         

@@ -150,16 +150,16 @@ def get_crossover_accept_rate(n: int):
 
 
 __WEIGHT_INITIALIZATION_NAME = None
+__WEIGHT_INITIALIZATION = None
 def set_weight_initialization(strategy_name: str):
+    global __WEIGHT_INITIALIZATION_NAME
     global __WEIGHT_INITIALIZATION
     strategy_name = strategy_name.lower()
     if strategy_name not in {'glorot', 'xavier', 'kaiming', 'epi', 'epigenetic'}:
         raise Exception(f"Supplied weight initialization strategy is invalid, unknown strategy '{strategy_name}'")
     __WEIGHT_INITIALIZATION_NAME = strategy_name
 
-
-def get_weight_initialization(cnn_genome: 'CnnGenome'):
-    
+    strategy_name = __WEIGHT_INITIALIZATION_NAME
     if strategy_name in {'glorot', 'xavier'}:
         weight_initialization = tf.keras.initializers.GlorotUniform()
     elif strategy_name == 'kaiming':
@@ -167,8 +167,11 @@ def get_weight_initialization(cnn_genome: 'CnnGenome'):
     elif strategy_name in {'epi', 'epigenetic'}:
         weight_initialization = Epigenetic(cnn_genome)
 
-    return __WEIGHT_INITIALIZATION
+    __WEIGHT_INITIALIZATION = weight_initialization
 
+
+def get_weight_initialization(cnn_genome: 'CnnGenome'):
+    return __WEIGHT_INITIALIZATION
 
 
 # How often to perform crossover

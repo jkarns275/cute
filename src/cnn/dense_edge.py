@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, cast
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer, get_regularizer
+from hp import make_activation_layer, get_regularizer, get_weight_initialization
 from cnn.edge import Edge
 from cnn.layer import Layer
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
@@ -89,6 +89,7 @@ class DenseEdge(Edge):
                                 activation='linear',
                                 kernel_regularizer=get_regularizer(genome.hp),
                                 bias_regularizer=get_regularizer(genome.hp),
+                                kernel_initializer=get_weight_initialization(genome),
                                 name=self.get_name())(flattened)
         
         self.tf_layer = dense

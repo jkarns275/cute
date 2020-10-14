@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional, Dict, Set, cast
 import tensorflow.keras as keras
 import tensorflow as tf
 
-from hp import make_activation_layer, make_batch_norm_layer, get_regularizer
+from hp import make_activation_layer, make_batch_norm_layer, get_regularizer, get_weight_initialization
 from cnn.cnn_util import calculate_output_volume_size, calculate_required_filter_size
 from cnn.edge import Edge
 if False:
@@ -102,6 +102,7 @@ class ConvEdge(Edge):
                                     strides=(self.stride, self.stride),
                                     kernel_regularizer=get_regularizer(genome.hp),
                                     bias_regularizer=get_regularizer(genome.hp),
+                                    kernel_initializer=get_weight_initialization(genome),
                                     activation='linear',
                                     input_shape=self.input_shape,
                                     name=self.get_name())(input_tf_layer)
